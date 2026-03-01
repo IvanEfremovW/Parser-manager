@@ -90,7 +90,9 @@ class DocumentMetadata:
             "title": self.title,
             "author": self.author,
             "subject": self.subject,
-            "creation_date": self.creation_date.isoformat() if self.creation_date else None,
+            "creation_date": self.creation_date.isoformat()
+            if self.creation_date
+            else None,
             "modification_date": self.modification_date.isoformat()
             if self.modification_date
             else None,

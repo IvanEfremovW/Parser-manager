@@ -22,7 +22,9 @@ class ParserFactory:
     _parsers_registry: dict[str, Type[BaseParser]] = {}
 
     @classmethod
-    def register_parser(cls, file_extension: str, parser_class: Type[BaseParser]) -> None:
+    def register_parser(
+        cls, file_extension: str, parser_class: Type[BaseParser]
+    ) -> None:
         """
         Регистрация парсера для определенного расширения файла
 
@@ -35,7 +37,9 @@ class ParserFactory:
             file_extension = "." + file_extension
 
         cls._parsers_registry[file_extension] = parser_class
-        logger.debug(f"Парсер {parser_class.__name__} зарегистрирован для {file_extension}")
+        logger.debug(
+            f"Парсер {parser_class.__name__} зарегистрирован для {file_extension}"
+        )
 
     @classmethod
     def register_parsers(cls, parsers: dict[str, Type[BaseParser]]) -> None:
