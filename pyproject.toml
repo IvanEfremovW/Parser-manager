@@ -31,8 +31,7 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
+    "ruff>=0.3.0",
     "mypy>=1.0.0",
 ]
 
@@ -42,3 +41,62 @@ parser-manager = "parser_manager:main"
 [build-system]
 requires = ["uv_build>=0.9.8,<0.10.0"]
 build-backend = "uv_build"
+
+# ─────────────────────────────────────────────────────────────
+# Ruff — линтер и форматтер (заменяет black, flake8, isort)
+# ─────────────────────────────────────────────────────────────
+[tool.ruff]
+# Целевая версия Python
+target-version = "py312"
+
+# Длина строки
+line-length = 100
+
+# Файлы для исключения
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+# Включенные правила
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RUF",    # ruff-specific rules
+]
+
+# Игнорируемые правила
+ignore = [
+    "E501",   # line too long (управляется line-length)
+    "B008",   # do not perform function calls in argument defaults
+]
+
+# Исправлять автоматически
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.format]
+# Использовать двойные кавычки
+quote-style = "double"
+
+# Отступ 4 пробела
+indent-style = "space"
+
+# Перенос строк - auto
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+# Секции импортов
+known-first-party = ["parser_manager"]

@@ -18,13 +18,13 @@ from .parsed_content import (
 )
 
 __all__ = [
-    'ParserError',
-    'UnsupportedFormatError',
-    'DocumentNotFoundError',
-    'ParsingFailedError',
-    'CorruptedFileError',
-    'InvalidConfigurationError',
-    'ParsedContent',
-    'DocumentMetadata',
-    'TextElement',
+    "ParserError",
+    "UnsupportedFormatError",
+    "DocumentNotFoundError",
+    "ParsingFailedError",
+    "CorruptedFileError",
+    "InvalidConfigurationError",
+    "ParsedContent",
+    "DocumentMetadata",
+    "TextElement",
 ]

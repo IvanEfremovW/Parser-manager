@@ -28,11 +28,11 @@ def main():
 
 __version__ = "0.0.0"
 __all__ = [
-    'BaseParser',
-    'ParserFactory',
-    'ParsedContent',
-    'DocumentMetadata',
-    'TextElement',
-    'ParserError',
-    'main',
+    "BaseParser",
+    "ParserFactory",
+    "ParsedContent",
+    "DocumentMetadata",
+    "TextElement",
+    "ParserError",
+    "main",
 ]
