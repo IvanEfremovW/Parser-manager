@@ -20,7 +20,8 @@ dependencies = [
     
     # Утилиты
     "chardet>=5.0.0",
-    "python-magic-bin>=0.4.14",
+    "python-magic>=0.4.27; sys_platform == 'linux'",
+    "python-magic-bin>=0.4.14; sys_platform != 'linux'",
     
     # Логирование и валидация
     "loguru>=0.7.0",
@@ -47,5 +48,5 @@ build-backend = "uv_build"
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.4",
-    "ty>=0.0.19",
+    "mypy>=1.0.0",
 ]

@@ -22,7 +22,9 @@ class ParserFactory:
     _parsers_registry: dict[str, Type[BaseParser]] = {}
 
     @classmethod
-    def register_parser(cls, file_extension: str, parser_class: Type[BaseParser]) -> None:
+    def register_parser(
+        cls, file_extension: str, parser_class: Type[BaseParser]
+    ) -> None:
         """
         Регистрация парсера для определенного расширения файла
 
@@ -35,7 +37,9 @@ class ParserFactory:
             file_extension = "." + file_extension
 
         cls._parsers_registry[file_extension] = parser_class
-        logger.debug(f"Парсер {parser_class.__name__} зарегистрирован для {file_extension}")
+        logger.debug(
+            f"Парсер {parser_class.__name__} зарегистрирован для {file_extension}"
+        )
 
     @classmethod
     def register_parsers(cls, parsers: dict[str, Type[BaseParser]]) -> None:
@@ -77,15 +81,15 @@ class ParserFactory:
             UnsupportedFormatError: Если формат файла не поддерживается
             FileNotFoundError: Если файл не существует
         """
-        file_path = Path(file_path)
+        path = Path(file_path)
 
         # Если парсер указан явно, используем его
         if parser_class is not None:
             logger.debug(f"Использован явно указанный парсер: {parser_class.__name__}")
-            return parser_class(str(file_path), **kwargs)
+            return parser_class(str(path), **kwargs)
 
         # Определяем расширение файла
-        extension = file_path.suffix.lower()
+        extension = path.suffix.lower()
 
         # Ищем подходящий парсер в регистре
         if extension not in cls._parsers_registry:
@@ -96,9 +100,9 @@ class ParserFactory:
             )
 
         parser_class = cls._parsers_registry[extension]
-        logger.info(f"Создан парсер {parser_class.__name__} для файла {file_path.name}")
+        logger.info(f"Создан парсер {parser_class.__name__} для файла {path.name}")
 
-        return parser_class(str(file_path), **kwargs)
+        return parser_class(str(path), **kwargs)
 
     @classmethod
     def is_format_supported(cls, file_path: str) -> bool:

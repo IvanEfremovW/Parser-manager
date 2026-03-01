@@ -35,8 +35,8 @@ jobs:
       - name: Run formatter (Ruff)
         run: uv run ruff format . --check --diff
 
-      - name: Run type checker (ty)
-        run: uv run ty check src/
+      - name: Run type checker (mypy)
+        run: uv run mypy src/
 
   test:
     name: Run Tests
