@@ -1,0 +1,17 @@
+[project]
+name = "parser-manager"
+version = "0.0.0"
+description = "Parser-manager"
+readme = "README.md"
+authors = [
+    { name = "IvanEfremovW", email = "Ivan.EfremovWM@yandex.ru" }
+]
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+parser-manager = "parser_manager:main"
+
+[build-system]
+requires = ["uv_build>=0.9.8,<0.10.0"]
+build-backend = "uv_build"
