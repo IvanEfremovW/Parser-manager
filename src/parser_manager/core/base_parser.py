@@ -4,7 +4,6 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional
 import logging
 
 from parser_manager.models import (

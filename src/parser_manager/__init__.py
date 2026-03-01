@@ -34,5 +34,9 @@ __all__ = [
     "DocumentMetadata",
     "TextElement",
     "ParserError",
+    "DocumentNotFoundError",
+    "UnsupportedFormatError",
+    "ParsingFailedError",
+    "CorruptedFileError",
     "main",
 ]
