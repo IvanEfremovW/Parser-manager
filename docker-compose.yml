@@ -1,0 +1,64 @@
+services:
+
+  # ─────────────────────────────────────────
+  # Основное приложение — парсер
+  # ─────────────────────────────────────────
+  parser:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: parser-manager
+    volumes:
+      # Монтируем исходный код для live-reload в разработке
+      - ./src:/app/src:ro
+      # Папка с файлами для парсинга
+      - ./input:/app/input
+      # Папка с результатами
+      - ./output:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    # Держим контейнер живым для интерактивной работы
+    stdin_open: true
+    tty: true
+    command: ["python", "-m", "parser_manager"]
+
+  # ─────────────────────────────────────────
+  # Тесты
+  # ─────────────────────────────────────────
+  tests:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: parser-manager-tests
+    volumes:
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    command: ["python", "-m", "pytest", "tests/", "-v", "--tb=short"]
+    profiles:
+      - test
+
+  # ─────────────────────────────────────────
+  # Dev окружение с полным доступом к коду
+  # ─────────────────────────────────────────
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: parser-manager-dev
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    stdin_open: true
+    tty: true
+    command: ["bash"]
+    profiles:
+      - dev
