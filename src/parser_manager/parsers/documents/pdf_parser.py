@@ -100,7 +100,7 @@ class PdfParser(BaseParser):
 
     def extract_metadata(self) -> DocumentMetadata:
         reader = self._open_pypdf()
-        info = reader.metadata or {}
+        info: dict[str, object] = dict(reader.metadata or {})
 
         def _get(key: str) -> str | None:
             val = info.get(key)

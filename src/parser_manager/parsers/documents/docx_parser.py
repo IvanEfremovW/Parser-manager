@@ -4,7 +4,8 @@ DOCX-парсер на основе python-docx
 
 import logging
 
-from docx import Document
+from docx import Document as load_docx_document
+from docx.document import Document as DocxDocument
 from docx.opc.exceptions import PackageNotFoundError
 
 from parser_manager.core.base_parser import BaseParser
@@ -31,9 +32,9 @@ class DocxParser(BaseParser):
     supported_extensions: tuple = (".docx",)
     format_name: str = "docx"
 
-    def _load_document(self) -> Document:
+    def _load_document(self) -> DocxDocument:
         try:
-            return Document(str(self.file_path))
+            return load_docx_document(str(self.file_path))
         except PackageNotFoundError as exc:
             raise CorruptedFileError(
                 f"Файл '{self.file_path.name}' не является валидным DOCX"

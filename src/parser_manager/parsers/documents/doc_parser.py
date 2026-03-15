@@ -12,7 +12,7 @@ import shutil
 import subprocess
 from datetime import datetime
 
-import olefile
+import olefile  # type: ignore[import-untyped]
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import (

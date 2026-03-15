@@ -3,8 +3,10 @@ HTML-парсер на основе BeautifulSoup4
 """
 
 import logging
+from typing import Any
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import (
@@ -32,6 +34,19 @@ class HtmlParser(BaseParser):
     _BLOCK_TAGS = {"p", "div", "section", "article", "blockquote", "pre"}
     _HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 
+    @staticmethod
+    def _attr_to_str(value: Any) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            cleaned = value.strip()
+            return cleaned or None
+        if isinstance(value, list):
+            joined = " ".join(str(item).strip() for item in value if str(item).strip())
+            return joined or None
+        cleaned = str(value).strip()
+        return cleaned or None
+
     def _load_soup(self) -> BeautifulSoup:
         raw = self.file_path.read_bytes()
         encoding = self.options.get("encoding", None)
@@ -46,8 +61,8 @@ class HtmlParser(BaseParser):
 
     def extract_text(self) -> str:
         soup = self._load_soup()
-        for tag in soup(["script", "style", "noscript"]):
-            tag.decompose()
+        for removable in soup(["script", "style", "noscript"]):
+            removable.decompose()
         return soup.get_text(separator="\n", strip=True)
 
     def extract_metadata(self) -> DocumentMetadata:
@@ -59,27 +74,29 @@ class HtmlParser(BaseParser):
         def _meta(name: str) -> str | None:
             tag = head.find("meta", attrs={"name": name})
             if tag:
-                return tag.get("content", "").strip() or None
+                return self._attr_to_str(tag.get("content"))
             return None
 
         def _meta_prop(prop: str) -> str | None:
             tag = head.find("meta", attrs={"property": prop})
             if tag:
-                return tag.get("content", "").strip() or None
+                return self._attr_to_str(tag.get("content"))
             return None
 
         charset_tag = head.find("meta", attrs={"charset": True})
-        encoding = charset_tag.get("charset") if charset_tag else None
+        encoding = (
+            self._attr_to_str(charset_tag.get("charset")) if charset_tag else None
+        )
         if not encoding:
             ct_tag = head.find("meta", attrs={"http-equiv": "Content-Type"})
             if ct_tag:
-                ct = ct_tag.get("content", "")
+                ct = self._attr_to_str(ct_tag.get("content")) or ""
                 if "charset=" in ct.lower():
-                    encoding = ct.lower().split("charset=")[-1].strip()
+                    encoding = ct.lower().split("charset=")[-1].strip() or None
 
         author = _meta("author") or _meta_prop("article:author")
         description = _meta("description") or _meta_prop("og:description")
-        language = soup.html.get("lang") if soup.html else None
+        language = self._attr_to_str(soup.html.get("lang")) if soup.html else None
 
         custom: dict = {}
         if description:
@@ -98,36 +115,36 @@ class HtmlParser(BaseParser):
 
     def extract_structure(self) -> list:
         soup = self._load_soup()
-        for tag in soup(["script", "style", "noscript"]):
-            tag.decompose()
+        for removable in soup(["script", "style", "noscript"]):
+            removable.decompose()
 
         elements: list[TextElement] = []
 
-        for tag in soup.body.descendants if soup.body else []:
-            if not hasattr(tag, "name") or tag.name is None:
+        for node in soup.body.descendants if soup.body else []:
+            if not isinstance(node, Tag):
                 continue
 
-            text = tag.get_text(strip=True)
+            text = node.get_text(strip=True)
             if not text:
                 continue
 
-            if tag.name in self._HEADING_TAGS:
-                level = int(tag.name[1])
+            if node.name in self._HEADING_TAGS:
+                level = int(node.name[1])
                 elements.append(
                     TextElement(content=text, element_type="heading", level=level)
                 )
-            elif tag.name in self._BLOCK_TAGS:
+            elif node.name in self._BLOCK_TAGS:
                 elements.append(TextElement(content=text, element_type="paragraph"))
-            elif tag.name == "li":
+            elif node.name == "li":
                 elements.append(TextElement(content=text, element_type="list"))
-            elif tag.name == "a":
-                href = tag.get("href", "")
+            elif node.name == "a":
+                href = self._attr_to_str(node.get("href")) or ""
                 elements.append(
                     TextElement(
                         content=text, element_type="link", metadata={"href": href}
                     )
                 )
-            elif tag.name == "table":
+            elif node.name == "table":
                 elements.append(TextElement(content=text, element_type="table"))
 
         return [e.to_dict() for e in elements]
