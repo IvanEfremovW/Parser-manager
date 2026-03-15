@@ -8,13 +8,13 @@ Test Cases:
 
 import pytest
 
-from parser_manager.parsers.documents.pdf_parser import PdfParser
 from parser_manager.models import (
-    ParsedContent,
-    DocumentNotFoundError,
     CorruptedFileError,
+    DocumentNotFoundError,
+    ParsedContent,
     ParsingFailedError,
 )
+from parser_manager.parsers.documents.pdf_parser import PdfParser
 
 
 class TestPdfParserInitialization:

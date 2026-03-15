@@ -4,15 +4,14 @@
 
 import io
 import tempfile
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 import pytest
 from docx import Document as DocxDocument
 
-from parser_manager.models import ParsedContent, DocumentMetadata, TextElement
-
+from parser_manager.models import DocumentMetadata, ParsedContent, TextElement
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Фикстуры временных директорий
@@ -148,8 +147,8 @@ def sample_docx_file(temp_dir: Path) -> Path:
     doc.add_paragraph("Another paragraph for testing.")
 
     # Добавить список
-    list_para = doc.add_paragraph("List item 1", style="List Bullet")
-    list_para2 = doc.add_paragraph("List item 2", style="List Bullet")
+    doc.add_paragraph("List item 1", style="List Bullet")
+    doc.add_paragraph("List item 2", style="List Bullet")
 
     # Добавить таблицу
     table = doc.add_table(rows=2, cols=2)
@@ -288,6 +287,7 @@ def sample_parsed_content(sample_html_file: Path) -> ParsedContent:
 def api_client():
     """Создать тестовый клиент для FastAPI приложения."""
     from fastapi.testclient import TestClient
+
     from parser_manager.api.app import app
 
     with TestClient(app) as client:

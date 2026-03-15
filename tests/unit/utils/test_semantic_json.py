@@ -5,14 +5,12 @@
 - TC-UTIL-001: Нормализация блоков
 """
 
-import pytest
-
 from parser_manager.utils.semantic_json import (
+    ALLOWED_BLOCK_TYPES,
+    derive_semantic_blocks,
     normalize_block,
     normalize_structure,
-    derive_semantic_blocks,
     semantic_summary,
-    ALLOWED_BLOCK_TYPES,
 )
 
 

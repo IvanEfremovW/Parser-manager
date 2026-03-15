@@ -6,14 +6,13 @@ Test Cases:
 """
 
 import pytest
-import shutil
 
-from parser_manager.parsers.documents.djvu_parser import DjvuParser
 from parser_manager.models import (
-    DocumentNotFoundError,
     CorruptedFileError,
+    DocumentNotFoundError,
     ParsingFailedError,
 )
+from parser_manager.parsers.documents.djvu_parser import DjvuParser
 
 
 class TestDjvuParserInitialization:
@@ -42,6 +41,7 @@ class TestDjvuParserMissingDependency:
 
     def test_djvu_parser_missing_djvused_raises_error(self, sample_djvu_file, mocker):
         """Test that missing djvused raises ParsingFailedError."""
+
         # Mock shutil.which to return None for djvused only
         def mock_which(cmd):
             if cmd == "djvused":
@@ -64,11 +64,12 @@ class TestDjvuParserExtraction:
     def test_djvu_parser_extract_text_command_failure(self, sample_djvu_file, mocker):
         """Test text extraction when djvutxt fails."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvutxt")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=1,
-            stdout="",
-            stderr="Error: Failed to process file"
-        ))
+        mocker.patch(
+            "subprocess.run",
+            return_value=mocker.Mock(
+                returncode=1, stdout="", stderr="Error: Failed to process file"
+            ),
+        )
 
         parser = DjvuParser(str(sample_djvu_file))
 
@@ -76,32 +77,32 @@ class TestDjvuParserExtraction:
             parser.extract_text()
 
         assert "djvutxt" in str(exc_info.value).lower()
-        assert "завершился с ошибкой" in str(exc_info.value).lower() or "error" in str(exc_info.value).lower()
+        assert (
+            "завершился с ошибкой" in str(exc_info.value).lower()
+            or "error" in str(exc_info.value).lower()
+        )
 
     def test_djvu_parser_extract_text_empty_output(self, sample_djvu_file, mocker):
         """Test text extraction when djvutxt returns empty output."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvutxt")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="",
-            stderr=""
-        ))
+        mocker.patch("subprocess.run", return_value=mocker.Mock(returncode=0, stdout="", stderr=""))
 
         parser = DjvuParser(str(sample_djvu_file))
 
         with pytest.raises(ParsingFailedError) as exc_info:
             parser.extract_text()
 
-        assert "не найден текстовый слой" in str(exc_info.value).lower() or "text" in str(exc_info.value).lower()
+        assert (
+            "не найден текстовый слой" in str(exc_info.value).lower()
+            or "text" in str(exc_info.value).lower()
+        )
 
     def test_djvu_parser_extract_metadata_command_failure(self, sample_djvu_file, mocker):
         """Test metadata extraction when djvused fails."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvused")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=1,
-            stdout="",
-            stderr="Error"
-        ))
+        mocker.patch(
+            "subprocess.run", return_value=mocker.Mock(returncode=1, stdout="", stderr="Error")
+        )
 
         parser = DjvuParser(str(sample_djvu_file))
         metadata = parser.extract_metadata()
@@ -112,11 +113,9 @@ class TestDjvuParserExtraction:
     def test_djvu_parser_extract_metadata_pages_parsing(self, sample_djvu_file, mocker):
         """Test metadata extraction with valid page count."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvused")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="10\n",
-            stderr=""
-        ))
+        mocker.patch(
+            "subprocess.run", return_value=mocker.Mock(returncode=0, stdout="10\n", stderr="")
+        )
 
         parser = DjvuParser(str(sample_djvu_file))
         metadata = parser.extract_metadata()
@@ -126,11 +125,9 @@ class TestDjvuParserExtraction:
     def test_djvu_parser_extract_metadata_pages_non_numeric(self, sample_djvu_file, mocker):
         """Test metadata extraction with non-numeric page count."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvused")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="invalid\n",
-            stderr=""
-        ))
+        mocker.patch(
+            "subprocess.run", return_value=mocker.Mock(returncode=0, stdout="invalid\n", stderr="")
+        )
 
         parser = DjvuParser(str(sample_djvu_file))
         metadata = parser.extract_metadata()
@@ -141,11 +138,12 @@ class TestDjvuParserExtraction:
     def test_djvu_parser_extract_structure_from_text(self, sample_djvu_file, mocker):
         """Test structure extraction."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvutxt")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="Page 1 content\fPage 2 content\fPage 3 content",
-            stderr=""
-        ))
+        mocker.patch(
+            "subprocess.run",
+            return_value=mocker.Mock(
+                returncode=0, stdout="Page 1 content\fPage 2 content\fPage 3 content", stderr=""
+            ),
+        )
 
         parser = DjvuParser(str(sample_djvu_file))
         structure = parser.extract_structure()
@@ -161,11 +159,10 @@ class TestDjvuParserExtraction:
     def test_djvu_parser_extract_structure_single_page(self, sample_djvu_file, mocker):
         """Test structure extraction with single page content."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvutxt")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="Single page content",
-            stderr=""
-        ))
+        mocker.patch(
+            "subprocess.run",
+            return_value=mocker.Mock(returncode=0, stdout="Single page content", stderr=""),
+        )
 
         parser = DjvuParser(str(sample_djvu_file))
         structure = parser.extract_structure()
@@ -198,11 +195,9 @@ class TestDjvuParserEdgeCases:
         file_path.write_bytes(b"Test")
 
         mocker.patch("shutil.which", return_value="/usr/bin/test_cmd")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="Output",
-            stderr=""
-        ))
+        mocker.patch(
+            "subprocess.run", return_value=mocker.Mock(returncode=0, stdout="Output", stderr="")
+        )
 
         parser = DjvuParser(str(file_path))
         result = parser._run(["arg1", "arg2"], required="test_cmd")
@@ -294,11 +289,10 @@ class TestDjvuParserEdgeCases:
         """Test handling of unicode errors in subprocess output."""
         mocker.patch("shutil.which", return_value="/usr/bin/djvutxt")
         # Simulate output with encoding issues
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="Test with special:  chars",
-            stderr=""
-        ))
+        mocker.patch(
+            "subprocess.run",
+            return_value=mocker.Mock(returncode=0, stdout="Test with special:  chars", stderr=""),
+        )
 
         parser = DjvuParser(str(sample_djvu_file))
 
@@ -317,7 +311,7 @@ class TestDjvuParserEdgeCases:
             if "-e" in cmd and "n" in cmd:
                 return mocker.Mock(returncode=0, stdout="5", stderr="")
             if "-e" in cmd and "print-meta" in cmd:
-                return mocker.Mock(returncode=0, stdout="(title \"Test\")", stderr="")
+                return mocker.Mock(returncode=0, stdout='(title "Test")', stderr="")
             return mocker.Mock(returncode=1, stdout="", stderr="")
 
         mocker.patch("subprocess.run", side_effect=mock_run)

@@ -13,7 +13,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any
 
 from .qa_stats import QAStatsCollector, TestStatistics
 
@@ -24,7 +24,7 @@ TEMPLATE_PATH = Path(__file__).parent / "qa_report_template.md"
 class QAReportGenerator:
     """Генерирует комплексные QA отчёты используя шаблон."""
 
-    def __init__(self, stats: Optional[TestStatistics] = None, template_path: Optional[Path] = None):
+    def __init__(self, stats: TestStatistics | None = None, template_path: Path | None = None):
         """Инициализировать генератор отчётов.
 
         Args:
@@ -34,7 +34,7 @@ class QAReportGenerator:
         self.stats = stats or TestStatistics()
         self.collector = QAStatsCollector()
         self.template_path = template_path or TEMPLATE_PATH
-        self._template: Optional[str] = None
+        self._template: str | None = None
 
     def _load_template(self) -> str:
         """Загрузить шаблон из файла."""
@@ -50,7 +50,7 @@ class QAReportGenerator:
         Args:
             json_path: Путь к statistics JSON файлу.
         """
-        with open(json_path, "r", encoding="utf-8") as f:
+        with open(json_path, encoding="utf-8") as f:
             data = json.load(f)
             self.stats = TestStatistics(**data)
 
@@ -90,7 +90,9 @@ class QAReportGenerator:
         # Ключевые находки
         if self.stats.issues:
             vars_dict["finding_1"] = self.stats.issues[0]["test"][:50]
-            vars_dict["finding_1_severity"] = "Высокая" if self.stats.issues[0]["type"] == "error" else "Средняя"
+            vars_dict["finding_1_severity"] = (
+                "Высокая" if self.stats.issues[0]["type"] == "error" else "Средняя"
+            )
             vars_dict["finding_1_status"] = "Открыто"
         else:
             vars_dict["finding_1"] = "Критических проблем не обнаружено"
@@ -104,7 +106,7 @@ class QAReportGenerator:
         # Резюме тестирования
         # Категории теперь взаимоисключающие, сумма должна сходиться
         by_cat = self.stats.by_category
-        
+
         # API тесты — это юнит-тесты API модуля
         api_count = by_cat.get("api", 0)
         # Интеграционные тесты
@@ -119,51 +121,49 @@ class QAReportGenerator:
         utils_count = by_cat.get("utils", 0)
         # Остальные unit тесты
         other_unit_count = by_cat.get("unit", 0)
-        
+
         # Для таблицы: Unit = parser + core + models + utils + other_unit
         # API и Integration — отдельные строки
         unit_total = parser_count + core_count + models_count + utils_count + other_unit_count
 
-        vars_dict.update({
-            # Unit тесты (сумма по подкатегориям)
-            "unit_planned": unit_total,
-            "unit_executed": unit_total,
-            "unit_passed": unit_total,
-            "unit_failed": 0,
-            "unit_blocked": 0,
-            "unit_rate": "100.0",
-
-            # Интеграционные тесты
-            "int_planned": int_count,
-            "int_executed": int_count,
-            "int_passed": int_count,
-            "int_failed": 0,
-            "int_blocked": 0,
-            "int_rate": "100.0",
-
-            # API тесты (отдельная категория)
-            "api_planned": api_count,
-            "api_executed": api_count,
-            "api_passed": api_count,
-            "api_failed": 0,
-            "api_blocked": 0,
-            "api_rate": "100.0",
-
-            # Всего (должно сходиться с суммой строк: unit_total + int_count + api_count)
-            "total_planned": unit_total + int_count + api_count,
-            "total_executed": unit_total + int_count + api_count,
-            "total_passed": self.stats.passed,
-            "total_failed": self.stats.failed,
-            "total_blocked": 0,
-            "total_rate": f"{self.stats.pass_rate:.1f}",
-            
-            # Детализация для отладки
-            "_debug_parser": parser_count,
-            "_debug_core": core_count,
-            "_debug_models": models_count,
-            "_debug_utils": utils_count,
-            "_debug_other_unit": other_unit_count,
-        })
+        vars_dict.update(
+            {
+                # Unit тесты (сумма по подкатегориям)
+                "unit_planned": unit_total,
+                "unit_executed": unit_total,
+                "unit_passed": unit_total,
+                "unit_failed": 0,
+                "unit_blocked": 0,
+                "unit_rate": "100.0",
+                # Интеграционные тесты
+                "int_planned": int_count,
+                "int_executed": int_count,
+                "int_passed": int_count,
+                "int_failed": 0,
+                "int_blocked": 0,
+                "int_rate": "100.0",
+                # API тесты (отдельная категория)
+                "api_planned": api_count,
+                "api_executed": api_count,
+                "api_passed": api_count,
+                "api_failed": 0,
+                "api_blocked": 0,
+                "api_rate": "100.0",
+                # Всего (должно сходиться с суммой строк: unit_total + int_count + api_count)
+                "total_planned": unit_total + int_count + api_count,
+                "total_executed": unit_total + int_count + api_count,
+                "total_passed": self.stats.passed,
+                "total_failed": self.stats.failed,
+                "total_blocked": 0,
+                "total_rate": f"{self.stats.pass_rate:.1f}",
+                # Детализация для отладки
+                "_debug_parser": parser_count,
+                "_debug_core": core_count,
+                "_debug_models": models_count,
+                "_debug_utils": utils_count,
+                "_debug_other_unit": other_unit_count,
+            }
+        )
 
         # Покрытие по модулям
         mod_cov = self.stats.module_coverage
@@ -177,40 +177,46 @@ class QAReportGenerator:
             vars_dict[f"{module}_line"] = f"{line_cov:.1f}"
 
         # Общее покрытие
-        vars_dict.update({
-            "overall_stmt": f"{self.stats.coverage_percent:.1f}",
-            "overall_branch": f"{self.stats.coverage_percent:.1f}",
-            "overall_func": f"{self.stats.coverage_percent:.1f}",
-            "overall_line": f"{self.stats.coverage_percent:.1f}",
-        })
+        vars_dict.update(
+            {
+                "overall_stmt": f"{self.stats.coverage_percent:.1f}",
+                "overall_branch": f"{self.stats.coverage_percent:.1f}",
+                "overall_func": f"{self.stats.coverage_percent:.1f}",
+                "overall_line": f"{self.stats.coverage_percent:.1f}",
+            }
+        )
 
         # Окружение
-        vars_dict.update({
-            "python_version": "3.12",
-            "pytest_version": "≥9.0.0",
-            "os_name": "Linux",
-            "docker_used": "Да",
-        })
+        vars_dict.update(
+            {
+                "python_version": "3.12",
+                "pytest_version": "≥9.0.0",
+                "os_name": "Linux",
+                "docker_used": "Да",
+            }
+        )
 
         # Дефекты
         issues_count = len(self.stats.issues)
-        vars_dict.update({
-            "crit_open": 0,
-            "crit_closed": 0,
-            "crit_total": 0,
-            "high_open": issues_count,
-            "high_closed": 0,
-            "high_total": issues_count,
-            "med_open": 0,
-            "med_closed": 0,
-            "med_total": 0,
-            "low_open": 0,
-            "low_closed": 0,
-            "low_total": 0,
-            "total_open": issues_count,
-            "total_closed": 0,
-            "total_defects": issues_count,
-        })
+        vars_dict.update(
+            {
+                "crit_open": 0,
+                "crit_closed": 0,
+                "crit_total": 0,
+                "high_open": issues_count,
+                "high_closed": 0,
+                "high_total": issues_count,
+                "med_open": 0,
+                "med_closed": 0,
+                "med_total": 0,
+                "low_open": 0,
+                "low_closed": 0,
+                "low_total": 0,
+                "total_open": issues_count,
+                "total_closed": 0,
+                "total_defects": issues_count,
+            }
+        )
 
         # Дефекты по модулям
         for mod in ["html", "pdf", "docx", "doc", "djvu", "api", "core", "models", "utils"]:
@@ -235,71 +241,79 @@ class QAReportGenerator:
         coverage_ok = self.stats.coverage_percent >= 80
         pass_rate_ok = self.stats.pass_rate >= 95
 
-        vars_dict.update({
-            "coverage_actual": f"{self.stats.coverage_percent:.1f}",
-            "coverage_status": self._get_status_emoji(coverage_ok),
-            "pass_rate_actual": f"{self.stats.pass_rate:.1f}",
-            "pass_rate_status": self._get_status_emoji(pass_rate_ok),
-            "critical_bugs": "0",
-            "critical_bugs_status": "✅",
-            "review_percent": "100",
-            "review_status": "✅",
-        })
+        vars_dict.update(
+            {
+                "coverage_actual": f"{self.stats.coverage_percent:.1f}",
+                "coverage_status": self._get_status_emoji(coverage_ok),
+                "pass_rate_actual": f"{self.stats.pass_rate:.1f}",
+                "pass_rate_status": self._get_status_emoji(pass_rate_ok),
+                "critical_bugs": "0",
+                "critical_bugs_status": "✅",
+                "review_percent": "100",
+                "review_status": "✅",
+            }
+        )
 
         # Производительность
-        vars_dict.update({
-            "avg_test_time": f"{self.stats.execution_time / max(self.stats.total_tests, 1):.3f}",
-            "total_test_time": f"{self.stats.execution_time:.2f}",
-            "api_response_time": "N/A",
-        })
+        vars_dict.update(
+            {
+                "avg_test_time": f"{self.stats.execution_time / max(self.stats.total_tests, 1):.3f}",
+                "total_test_time": f"{self.stats.execution_time:.2f}",
+                "api_response_time": "N/A",
+            }
+        )
 
         # Риски
-        vars_dict.update({
-            "risk_1_prob": "Низкая",
-            "risk_1_impact": "Среднее",
-            "risk_1_mitigation": "Mock тесты, skip маркеры",
-            "risk_2_prob": "Средняя",
-            "risk_2_impact": "Высокое",
-            "risk_2_mitigation": "Тесты на различных PDF",
-            "risk_3_prob": "Средняя",
-            "risk_3_impact": "Высокое",
-            "risk_3_mitigation": "Unicode тесты, chardet fallback",
-
-            "quality_risk_1": "Низкий риск",
-            "quality_risk_2": "Требуется планирование",
-            "quality_risk_3": "Вне области текущего спринта",
-        })
+        vars_dict.update(
+            {
+                "risk_1_prob": "Низкая",
+                "risk_1_impact": "Среднее",
+                "risk_1_mitigation": "Mock тесты, skip маркеры",
+                "risk_2_prob": "Средняя",
+                "risk_2_impact": "Высокое",
+                "risk_2_mitigation": "Тесты на различных PDF",
+                "risk_3_prob": "Средняя",
+                "risk_3_impact": "Высокое",
+                "risk_3_mitigation": "Unicode тесты, chardet fallback",
+                "quality_risk_1": "Низкий риск",
+                "quality_risk_2": "Требуется планирование",
+                "quality_risk_3": "Вне области текущего спринта",
+            }
+        )
 
         # Рекомендации
         recommendations = []
         if self.stats.failed > 0:
             recommendations.append(f"Исправить {self.stats.failed} проваленных тестов")
         if self.stats.coverage_percent < 85:
-            recommendations.append(f"Увеличить покрытие кода с {self.stats.coverage_percent:.1f}% до 85%")
+            recommendations.append(
+                f"Увеличить покрытие кода с {self.stats.coverage_percent:.1f}% до 85%"
+            )
         if not recommendations:
             recommendations.append("Все целевые показатели достигнуты")
 
-        vars_dict.update({
-            "rec_1_num": "1",
-            "rec_1_text": recommendations[0] if len(recommendations) > 0 else "—",
-            "rec_1_priority": "Высокий" if self.stats.failed > 0 else "Средний",
-            "rec_2_num": "2",
-            "rec_2_text": recommendations[1] if len(recommendations) > 1 else "—",
-            "rec_2_priority": "Средний",
-            "rec_3_num": "3",
-            "rec_3_text": "Продолжить мониторинг качества",
-            "rec_3_priority": "Низкий",
-
-            "fut_1_num": "1",
-            "fut_1_text": "Добавить нагрузочное тестирование API",
-            "fut_1_priority": "Средний",
-            "fut_2_num": "2",
-            "fut_2_text": "Расширить тесты для граничных случаев парсеров",
-            "fut_2_priority": "Средний",
-            "fut_3_num": "3",
-            "fut_3_text": "Внедрить security testing",
-            "fut_3_priority": "Низкий",
-        })
+        vars_dict.update(
+            {
+                "rec_1_num": "1",
+                "rec_1_text": recommendations[0] if len(recommendations) > 0 else "—",
+                "rec_1_priority": "Высокий" if self.stats.failed > 0 else "Средний",
+                "rec_2_num": "2",
+                "rec_2_text": recommendations[1] if len(recommendations) > 1 else "—",
+                "rec_2_priority": "Средний",
+                "rec_3_num": "3",
+                "rec_3_text": "Продолжить мониторинг качества",
+                "rec_3_priority": "Низкий",
+                "fut_1_num": "1",
+                "fut_1_text": "Добавить нагрузочное тестирование API",
+                "fut_1_priority": "Средний",
+                "fut_2_num": "2",
+                "fut_2_text": "Расширить тесты для граничных случаев парсеров",
+                "fut_2_priority": "Средний",
+                "fut_3_num": "3",
+                "fut_3_text": "Внедрить security testing",
+                "fut_3_priority": "Низкий",
+            }
+        )
 
         # Go/No-Go
         go_crit, note_crit = self._get_go_no_go_value(self.stats.failed == 0)
@@ -307,33 +321,37 @@ class QAReportGenerator:
         go_bugs, note_bugs = self._get_go_no_go_value(issues_count == 0)
         go_perf, note_perf = self._get_go_no_go_value(True)
 
-        vars_dict.update({
-            "go_crit_tests": go_crit,
-            "go_crit_tests_note": note_crit,
-            "go_coverage": go_cov,
-            "go_coverage_note": note_cov,
-            "go_bugs": go_bugs,
-            "go_bugs_note": note_bugs,
-            "go_performance": go_perf,
-            "go_performance_note": note_perf,
-            "final_recommendation": self._get_recommendation_text(),
-        })
+        vars_dict.update(
+            {
+                "go_crit_tests": go_crit,
+                "go_crit_tests_note": note_crit,
+                "go_coverage": go_cov,
+                "go_coverage_note": note_cov,
+                "go_bugs": go_bugs,
+                "go_bugs_note": note_bugs,
+                "go_performance": go_perf,
+                "go_performance_note": note_perf,
+                "final_recommendation": self._get_recommendation_text(),
+            }
+        )
 
         # Подписание
-        vars_dict.update({
-            "qa_name": "________________",
-            "qa_date": datetime.now().strftime("%Y-%m-%d"),
-            "lead_name": "________________",
-            "lead_date": datetime.now().strftime("%Y-%m-%d"),
-            "po_name": "________________",
-            "po_date": datetime.now().strftime("%Y-%m-%d"),
-            "pm_name": "________________",
-            "pm_date": datetime.now().strftime("%Y-%m-%d"),
-        })
+        vars_dict.update(
+            {
+                "qa_name": "________________",
+                "qa_date": datetime.now().strftime("%Y-%m-%d"),
+                "lead_name": "________________",
+                "lead_date": datetime.now().strftime("%Y-%m-%d"),
+                "po_name": "________________",
+                "po_date": datetime.now().strftime("%Y-%m-%d"),
+                "pm_name": "________________",
+                "pm_date": datetime.now().strftime("%Y-%m-%d"),
+            }
+        )
 
         return vars_dict
 
-    def generate_report(self, output_path: Optional[str] = None) -> str:
+    def generate_report(self, output_path: str | None = None) -> str:
         """Сгенерировать полный QA отчёт.
 
         Args:
@@ -357,11 +375,11 @@ class QAReportGenerator:
 
 
 def generate_report(
-    junit_xml: Optional[str] = None,
-    coverage_xml: Optional[str] = None,
-    stats_json: Optional[str] = None,
+    junit_xml: str | None = None,
+    coverage_xml: str | None = None,
+    stats_json: str | None = None,
     output: str = "qa_report.md",
-    template_path: Optional[Path] = None,
+    template_path: Path | None = None,
 ) -> str:
     """Сгенерировать QA отчёт из артефактов тестирования.
 

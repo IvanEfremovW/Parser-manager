@@ -3,15 +3,11 @@
 from pathlib import Path
 
 
-def collect_file_metrics(
-    file_path: str, semantic_blocks: list[dict], text: str
-) -> dict:
+def collect_file_metrics(file_path: str, semantic_blocks: list[dict], text: str) -> dict:
     path = Path(file_path)
     size = path.stat().st_size if path.exists() else 0
 
-    block_lengths = [
-        len((block.get("content") or "").strip()) for block in semantic_blocks or []
-    ]
+    block_lengths = [len((block.get("content") or "").strip()) for block in semantic_blocks or []]
 
     return {
         "file_name": path.name,

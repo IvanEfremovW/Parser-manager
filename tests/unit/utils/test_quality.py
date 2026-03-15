@@ -5,9 +5,7 @@ Test Cases:
 - TC-UTIL-002: Quality Scoring
 """
 
-import pytest
-
-from parser_manager.utils.quality import score_quality, _safe_ratio
+from parser_manager.utils.quality import _safe_ratio, score_quality
 
 
 class TestSafeRatio:
@@ -135,7 +133,7 @@ class TestScoreQuality:
     def test_score_quality_broken_chars_ratio(self):
         """Test broken_chars_ratio with replacement characters."""
         clean_text = "Clean text. " * 20
-        # Use actual replacement character 
+        # Use actual replacement character
         broken_text = clean_text + "\ufffd" * 10
 
         result_clean = score_quality(clean_text, [])
@@ -143,7 +141,9 @@ class TestScoreQuality:
 
         assert result_broken["broken_chars_ratio"] > result_clean["broken_chars_ratio"]
         # The broken text should have a non-zero broken ratio
-        assert result_broken["broken_chars_ratio"] > 0.0 or result_clean["broken_chars_ratio"] == 0.0
+        assert (
+            result_broken["broken_chars_ratio"] > 0.0 or result_clean["broken_chars_ratio"] == 0.0
+        )
 
     def test_score_quality_table_coverage(self):
         """Test table_coverage calculation."""

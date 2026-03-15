@@ -10,20 +10,21 @@ import logging
 import shutil
 import subprocess
 from datetime import datetime
+from typing import cast
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import (
-    ParsedContent,
-    DocumentMetadata,
-    TextElement,
-    ParsingFailedError,
     CorruptedFileError,
+    DocumentMetadata,
+    ParsedContent,
+    ParsingFailedError,
+    TextElement,
 )
 from parser_manager.utils import (
-    derive_semantic_blocks,
-    semantic_summary,
-    score_quality,
     collect_file_metrics,
+    derive_semantic_blocks,
+    score_quality,
+    semantic_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class DjvuParser(BaseParser):
             raise ParsingFailedError(
                 f"djvutxt завершился с ошибкой ({proc.returncode}): {proc.stderr.strip()}"
             )
-        text = proc.stdout.strip()
+        text = cast(str, proc.stdout).strip()
         if not text:
             raise ParsingFailedError("В DJVU не найден текстовый слой")
         return text
@@ -76,9 +77,7 @@ class DjvuParser(BaseParser):
                 pages = int(raw)
 
         custom_fields: dict = {}
-        proc_meta = self._run(
-            ["-e", "print-meta", str(self.file_path)], required="djvused"
-        )
+        proc_meta = self._run(["-e", "print-meta", str(self.file_path)], required="djvused")
         if proc_meta.returncode == 0 and proc_meta.stdout.strip():
             custom_fields["raw_meta"] = proc_meta.stdout.strip()
 
@@ -91,9 +90,7 @@ class DjvuParser(BaseParser):
         elements: list[TextElement] = []
         if page_chunks:
             for idx, chunk in enumerate(page_chunks, start=1):
-                elements.append(
-                    TextElement(content=chunk, element_type="paragraph", page=idx)
-                )
+                elements.append(TextElement(content=chunk, element_type="paragraph", page=idx))
         else:
             elements.append(TextElement(content=text, element_type="paragraph", page=1))
 
@@ -106,9 +103,7 @@ class DjvuParser(BaseParser):
             structure = self.extract_structure()
             semantic_blocks = derive_semantic_blocks(text, structure)
             quality = score_quality(text, semantic_blocks)
-            file_metrics = collect_file_metrics(
-                str(self.file_path), semantic_blocks, text
-            )
+            file_metrics = collect_file_metrics(str(self.file_path), semantic_blocks, text)
 
             return ParsedContent(
                 file_path=str(self.file_path),

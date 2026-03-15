@@ -9,8 +9,6 @@ Test Cases:
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-import asyncio
 
 
 class TestHealthEndpoint:
@@ -249,10 +247,7 @@ class TestAPIWithMockedService:
             "error": None,
         }
 
-        mocker.patch(
-            "parser_manager.api.service.parse_file_sync",
-            return_value=mock_result
-        )
+        mocker.patch("parser_manager.api.service.parse_file_sync", return_value=mock_result)
 
         files = {"file": ("test.html", sample_html_content, "text/html")}
         response = api_client.post("/jobs/parse", files=files)
@@ -263,6 +258,7 @@ class TestAPIWithMockedService:
 
         # Wait for processing (mocked, should be fast)
         import time
+
         time.sleep(0.5)
 
         result_response = api_client.get(f"/jobs/{job_id}/result")
@@ -273,7 +269,7 @@ class TestAPIWithMockedService:
         """Test job failure with mocked error."""
         mocker.patch(
             "parser_manager.api.service.parse_file_sync",
-            side_effect=Exception("Mocked parsing error")
+            side_effect=Exception("Mocked parsing error"),
         )
 
         files = {"file": ("test.html", sample_html_content, "text/html")}
@@ -284,6 +280,7 @@ class TestAPIWithMockedService:
 
         # Wait for processing
         import time
+
         time.sleep(0.5)
 
         # Job should be in failed state or still processing

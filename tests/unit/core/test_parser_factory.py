@@ -6,11 +6,10 @@
 - TC-CORE-004: ParserFactory неподдерживаемый формат
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock
 
-from parser_manager.core.parser_factory import ParserFactory
+import pytest
+
 from parser_manager.models import UnsupportedFormatError
 
 
@@ -70,6 +69,7 @@ class TestParserFactoryRegistration:
 
     def test_register_parser_overwrites_existing(self):
         """Тест что регистрация того же расширения перезаписывает предыдущее."""
+
         class AnotherParser:
             supported_extensions = (".test",)
             format_name = "another"
@@ -205,7 +205,9 @@ class TestParserFactoryEdgeCases:
 
         def register():
             try:
-                self.registry.register_parser(f".test_{threading.current_thread().name}", MockParser)
+                self.registry.register_parser(
+                    f".test_{threading.current_thread().name}", MockParser
+                )
             except Exception as e:
                 errors.append(e)
 

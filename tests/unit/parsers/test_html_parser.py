@@ -7,12 +7,11 @@ Test Cases:
 
 import pytest
 
-from parser_manager.parsers.html_parser import HtmlParser
 from parser_manager.models import (
-    ParsedContent,
     DocumentNotFoundError,
-    ParsingFailedError,
+    ParsedContent,
 )
+from parser_manager.parsers.html_parser import HtmlParser
 
 
 class TestHtmlParserInitialization:

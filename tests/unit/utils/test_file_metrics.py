@@ -2,7 +2,6 @@
 Unit tests for file metrics utilities.
 """
 
-import pytest
 from pathlib import Path
 
 from parser_manager.utils.file_metrics import collect_file_metrics
@@ -239,10 +238,7 @@ class TestCollectFileMetricsEdgeCases:
         file_path = temp_dir / "test.txt"
         file_path.write_text("Test", encoding="utf-8")
 
-        blocks = [
-            {"content": f"block_{i}", "element_type": "paragraph"}
-            for i in range(1000)
-        ]
+        blocks = [{"content": f"block_{i}", "element_type": "paragraph"} for i in range(1000)]
 
         result = collect_file_metrics(str(file_path), blocks, "")
 

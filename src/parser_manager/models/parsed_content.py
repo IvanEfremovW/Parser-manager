@@ -3,7 +3,6 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
 from datetime import datetime
 
 
@@ -35,7 +34,7 @@ class ParsedContent:
     raw_data: dict = field(default_factory=dict)
     parsed_at: datetime = field(default_factory=datetime.now)
     success: bool = True
-    error: Optional[str] = None
+    error: str | None = None
 
     # Поддерживаемые форматы — расширяемый набор
     SUPPORTED_FORMATS: frozenset = frozenset({"html", "pdf", "docx", "doc", "djvu"})
@@ -80,14 +79,14 @@ class ParsedContent:
 class DocumentMetadata:
     """Метаданные документа"""
 
-    title: Optional[str] = None
-    author: Optional[str] = None
-    subject: Optional[str] = None
-    creation_date: Optional[datetime] = None
-    modification_date: Optional[datetime] = None
-    pages: Optional[int] = None
-    language: Optional[str] = None
-    encoding: Optional[str] = None
+    title: str | None = None
+    author: str | None = None
+    subject: str | None = None
+    creation_date: datetime | None = None
+    modification_date: datetime | None = None
+    pages: int | None = None
+    language: str | None = None
+    encoding: str | None = None
     custom_fields: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -96,9 +95,7 @@ class DocumentMetadata:
             "title": self.title,
             "author": self.author,
             "subject": self.subject,
-            "creation_date": self.creation_date.isoformat()
-            if self.creation_date
-            else None,
+            "creation_date": self.creation_date.isoformat() if self.creation_date else None,
             "modification_date": self.modification_date.isoformat()
             if self.modification_date
             else None,
@@ -118,8 +115,8 @@ class TextElement:
     element_type: str  # 'paragraph', 'heading', 'table', 'list', 'link', etc
     level: int = 0  # Для заголовков
     style: dict = field(default_factory=dict)  # Форматирование (bold, italic, etc)
-    position: Optional[dict] = None  # Координаты (для PDF)
-    page: Optional[int] = None  # Номер страницы
+    position: dict | None = None  # Координаты (для PDF)
+    page: int | None = None  # Номер страницы
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:

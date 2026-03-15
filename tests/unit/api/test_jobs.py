@@ -2,10 +2,11 @@
 Unit tests for job queue management.
 """
 
-import pytest
 import asyncio
 from datetime import datetime
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock
+
+import pytest
 
 from parser_manager.api.jobs import JobRecord, ParseJobQueue
 
@@ -195,7 +196,7 @@ class TestParseJobQueue:
         """Test that worker processes jobs."""
         mock_parse = mocker.patch(
             "parser_manager.api.jobs.parse_file_sync",
-            return_value={"text": "parsed", "success": True}
+            return_value={"text": "parsed", "success": True},
         )
 
         now = datetime.utcnow()
@@ -221,9 +222,8 @@ class TestParseJobQueue:
     @pytest.mark.asyncio
     async def test_worker_handles_errors(self, job_queue, mocker):
         """Test that worker handles parsing errors."""
-        mock_parse = mocker.patch(
-            "parser_manager.api.jobs.parse_file_sync",
-            side_effect=Exception("Parsing failed")
+        mocker.patch(
+            "parser_manager.api.jobs.parse_file_sync", side_effect=Exception("Parsing failed")
         )
 
         now = datetime.utcnow()
@@ -251,10 +251,7 @@ class TestParseJobQueue:
         temp_file = temp_dir / "test.html"
         temp_file.write_text("test content")
 
-        mock_parse = mocker.patch(
-            "parser_manager.api.jobs.parse_file_sync",
-            return_value={"success": True}
-        )
+        mocker.patch("parser_manager.api.jobs.parse_file_sync", return_value={"success": True})
 
         now = datetime.utcnow()
         job = JobRecord(
@@ -278,10 +275,7 @@ class TestParseJobQueue:
     @pytest.mark.asyncio
     async def test_webhook_sent_on_completion(self, job_queue, mocker):
         """Test that webhook is sent on job completion."""
-        mock_parse = mocker.patch(
-            "parser_manager.api.jobs.parse_file_sync",
-            return_value={"success": True}
-        )
+        mocker.patch("parser_manager.api.jobs.parse_file_sync", return_value={"success": True})
         mock_post = mocker.patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 
         now = datetime.utcnow()
@@ -306,10 +300,7 @@ class TestParseJobQueue:
     @pytest.mark.asyncio
     async def test_webhook_not_sent_without_url(self, job_queue, mocker):
         """Test that webhook is not sent when URL is not provided."""
-        mock_parse = mocker.patch(
-            "parser_manager.api.jobs.parse_file_sync",
-            return_value={"success": True}
-        )
+        mocker.patch("parser_manager.api.jobs.parse_file_sync", return_value={"success": True})
         mock_post = mocker.patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 
         now = datetime.utcnow()
@@ -334,10 +325,7 @@ class TestParseJobQueue:
     @pytest.mark.asyncio
     async def test_webhook_sent_on_failure(self, job_queue, mocker):
         """Test that webhook is sent on job failure."""
-        mock_parse = mocker.patch(
-            "parser_manager.api.jobs.parse_file_sync",
-            side_effect=Exception("Error")
-        )
+        mocker.patch("parser_manager.api.jobs.parse_file_sync", side_effect=Exception("Error"))
         mock_post = mocker.patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 
         now = datetime.utcnow()
@@ -370,12 +358,11 @@ class TestParseJobQueueEdgeCases:
     async def test_multiple_jobs_queued(self, mocker):
         """Test queueing multiple jobs."""
         from parser_manager.api.jobs import ParseJobQueue
-        
+
         queue = ParseJobQueue()
-        
+
         mock_parse = mocker.patch(
-            "parser_manager.api.jobs.parse_file_sync",
-            return_value={"success": True}
+            "parser_manager.api.jobs.parse_file_sync", return_value={"success": True}
         )
 
         await queue.start()
@@ -404,9 +391,9 @@ class TestParseJobQueueEdgeCases:
     async def test_queue_restart(self, mocker):
         """Test restarting the queue."""
         from parser_manager.api.jobs import ParseJobQueue
-        
+
         queue = ParseJobQueue()
-        
+
         await queue.start()
         first_task = queue._worker_task
 
@@ -423,17 +410,17 @@ class TestParseJobQueueEdgeCases:
     async def test_get_job_during_processing(self, mocker):
         """Test getting job while it's being processed."""
         from parser_manager.api.jobs import ParseJobQueue
-        
+
         queue = ParseJobQueue()
-        
+
         # Create a slow mock
         async def slow_parse(*args):
             await asyncio.sleep(0.2)
             return {"success": True}
 
-        mock_parse = mocker.patch(
+        mocker.patch(
             "parser_manager.api.jobs.parse_file_sync",
-            side_effect=lambda *args: asyncio.run(slow_parse())
+            side_effect=lambda *args: asyncio.run(slow_parse()),
         )
 
         now = datetime.utcnow()

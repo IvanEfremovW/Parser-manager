@@ -4,19 +4,16 @@ Integration tests for Parser Manager.
 These tests verify the full parsing pipeline from file input to JSON output.
 """
 
-import pytest
 import asyncio
-from pathlib import Path
 from datetime import datetime
 
-from parser_manager.core import ParserFactory
-from parser_manager.models import ParsedContent
-from parser_manager.api.jobs import ParseJobQueue, JobRecord
-from parser_manager.api.service import parse_file_sync
-
+import pytest
 
 # Import parsers to register them
 import parser_manager.parsers  # noqa: F401
+from parser_manager.api.jobs import JobRecord, ParseJobQueue
+from parser_manager.core import ParserFactory
+from parser_manager.models import ParsedContent
 
 
 class TestFullParsingPipeline:
@@ -94,7 +91,9 @@ class TestFullParsingPipeline:
 
         pdf_file = temp_dir / "test.pdf"
         # Minimal PDF
-        pdf_file.write_bytes(b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\nxref\n0 3\ntrailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n100\n%%EOF\n")
+        pdf_file.write_bytes(
+            b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\nxref\n0 3\ntrailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n100\n%%EOF\n"
+        )
 
         # Get parsers
         html_parser = ParserFactory.create_parser(str(html_file))
@@ -163,11 +162,9 @@ class TestAPIIntegration:
     async def test_api_job_with_webhook_callback(self, api_client, sample_html_content, mocker):
         """Test job creation with webhook callback."""
         # Mock webhook endpoint
-        mock_post = mocker.patch("httpx.AsyncClient.post")
+        mocker.patch("httpx.AsyncClient.post")
 
-        files = {
-            "file": ("test.html", sample_html_content, "text/html")
-        }
+        files = {"file": ("test.html", sample_html_content, "text/html")}
         data = {"webhook_url": "https://example.com/webhook"}
 
         response = api_client.post("/jobs/parse", files=files, data=data)
@@ -222,11 +219,11 @@ class TestQualityMetricsIntegration:
 
         # Total should match sum of types
         type_counts = (
-            summary["heading_blocks"] +
-            summary["paragraph_blocks"] +
-            summary["table_blocks"] +
-            summary["list_blocks"] +
-            summary["link_blocks"]
+            summary["heading_blocks"]
+            + summary["paragraph_blocks"]
+            + summary["table_blocks"]
+            + summary["list_blocks"]
+            + summary["link_blocks"]
         )
 
         assert summary["total_blocks"] == type_counts
@@ -250,6 +247,7 @@ class TestErrorHandlingIntegration:
 
         # Should be a parser-related error
         from parser_manager.models import ParserError
+
         assert isinstance(exc_info.value, ParserError)
 
     def test_missing_file_error_propagation(self):
@@ -259,6 +257,7 @@ class TestErrorHandlingIntegration:
             parser.parse()
 
         from parser_manager.models import DocumentNotFoundError
+
         assert isinstance(exc_info.value, DocumentNotFoundError)
 
     def test_unsupported_format_error_propagation(self, temp_dir):
@@ -271,6 +270,7 @@ class TestErrorHandlingIntegration:
             parser.parse()
 
         from parser_manager.models import UnsupportedFormatError
+
         assert isinstance(exc_info.value, UnsupportedFormatError)
 
 
@@ -288,9 +288,7 @@ class TestConcurrencyIntegration:
 
         # Run multiple parses concurrently
         loop = asyncio.get_event_loop()
-        results = await asyncio.gather(
-            *[loop.run_in_executor(None, parse_sync) for _ in range(5)]
-        )
+        results = await asyncio.gather(*[loop.run_in_executor(None, parse_sync) for _ in range(5)])
 
         # All should succeed
         for result in results:
@@ -300,7 +298,6 @@ class TestConcurrencyIntegration:
     @pytest.mark.asyncio
     async def test_concurrent_job_queue(self, sample_html_content):
         """Test concurrent job queue operations."""
-        from parser_manager.api.jobs import ParseJobQueue
 
         queue = ParseJobQueue()
         await queue.start()
@@ -346,5 +343,5 @@ class TestParserRegistryIntegration:
         parser1 = ParserFactory.create_parser(str(sample_html_file))
         parser2 = ParserFactory.create_parser(str(sample_html_file))
 
-        assert type(parser1) == type(parser2)
+        assert type(parser1) is type(parser2)
         assert parser1.format_name == parser2.format_name

@@ -6,11 +6,12 @@
 - TC-MODEL-002: Валидация ParsedContent
 """
 
-import pytest
 from datetime import datetime
 from pathlib import Path
 
-from parser_manager.models import ParsedContent, DocumentMetadata, TextElement
+import pytest
+
+from parser_manager.models import DocumentMetadata, ParsedContent, TextElement
 
 
 class TestDocumentMetadata:
@@ -206,9 +207,7 @@ class TestParsedContent:
 
     def test_parsed_content_text_length(self, sample_parsed_content: ParsedContent):
         """Тест свойства text_length."""
-        assert sample_parsed_content.text_length == len(
-            sample_parsed_content.text
-        )
+        assert sample_parsed_content.text_length == len(sample_parsed_content.text)
 
     def test_parsed_content_has_error_true(self, temp_dir: Path):
         """Тест свойства has_error когда error установлен."""
@@ -256,7 +255,9 @@ class TestParsedContent:
         assert isinstance(result["parsed_at"], str)
         assert "T" in result["parsed_at"]  # ISO формат содержит T разделитель
 
-    def test_parsed_content_to_dict_includes_text_length(self, sample_parsed_content: ParsedContent):
+    def test_parsed_content_to_dict_includes_text_length(
+        self, sample_parsed_content: ParsedContent
+    ):
         """Тест что text_length включён в вывод dict."""
         result = sample_parsed_content.to_dict()
 

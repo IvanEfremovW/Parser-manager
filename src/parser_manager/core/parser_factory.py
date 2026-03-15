@@ -2,13 +2,11 @@
 Factory pattern для создания парсеров
 """
 
-from pathlib import Path
-from typing import Type, Optional
 import logging
+from pathlib import Path
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import UnsupportedFormatError
-
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +17,10 @@ class ParserFactory:
     """
 
     # Регистр парсеров: расширение -> класс парсера
-    _parsers_registry: dict[str, Type[BaseParser]] = {}
+    _parsers_registry: dict[str, type[BaseParser]] = {}
 
     @classmethod
-    def register_parser(
-        cls, file_extension: str, parser_class: Type[BaseParser]
-    ) -> None:
+    def register_parser(cls, file_extension: str, parser_class: type[BaseParser]) -> None:
         """
         Регистрация парсера для определенного расширения файла
 
@@ -37,12 +33,10 @@ class ParserFactory:
             file_extension = "." + file_extension
 
         cls._parsers_registry[file_extension] = parser_class
-        logger.debug(
-            f"Парсер {parser_class.__name__} зарегистрирован для {file_extension}"
-        )
+        logger.debug(f"Парсер {parser_class.__name__} зарегистрирован для {file_extension}")
 
     @classmethod
-    def register_parsers(cls, parsers: dict[str, Type[BaseParser]]) -> None:
+    def register_parsers(cls, parsers: dict[str, type[BaseParser]]) -> None:
         """
         Регистрация нескольких парсеров сразу
 
@@ -60,11 +54,11 @@ class ParserFactory:
         Returns:
             list[str]: Список расширений файлов
         """
-        return sorted(list(cls._parsers_registry.keys()))
+        return sorted(cls._parsers_registry.keys())
 
     @classmethod
     def create_parser(
-        cls, file_path: str, parser_class: Optional[Type[BaseParser]] = None, **kwargs
+        cls, file_path: str, parser_class: type[BaseParser] | None = None, **kwargs
     ) -> BaseParser:
         """
         Создать парсер для файла

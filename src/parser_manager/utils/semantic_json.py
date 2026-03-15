@@ -71,7 +71,5 @@ def semantic_summary(blocks: list[dict]) -> dict:
         "table_blocks": counts.get("table", 0),
         "list_blocks": counts.get("list", 0),
         "link_blocks": counts.get("link", 0),
-        "pages_detected": len(
-            {b.get("page") for b in blocks if b.get("page") is not None}
-        ),
+        "pages_detected": len({b.get("page") for b in blocks if b.get("page") is not None}),
     }

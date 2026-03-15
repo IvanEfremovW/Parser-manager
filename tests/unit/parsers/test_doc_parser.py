@@ -5,15 +5,16 @@ Test Cases:
 - TC-PARSER-DOC-001: DOC Error Handling
 """
 
-import pytest
 import shutil
 
-from parser_manager.parsers.documents.doc_parser import DocParser
+import pytest
+
 from parser_manager.models import (
-    DocumentNotFoundError,
     CorruptedFileError,
+    DocumentNotFoundError,
     ParsingFailedError,
 )
+from parser_manager.parsers.documents.doc_parser import DocParser
 
 
 class TestDocParserInitialization:
@@ -123,11 +124,9 @@ class TestDocParserEdgeCases:
         mocker.patch("shutil.which", side_effect=mock_which)
 
         # Mock subprocess.run to simulate catdoc failure
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=1,
-            stdout="",
-            stderr="Error"
-        ))
+        mocker.patch(
+            "subprocess.run", return_value=mocker.Mock(returncode=1, stdout="", stderr="Error")
+        )
 
         parser = DocParser(str(file_path))
         result = parser._extract_with_cli()
@@ -140,11 +139,10 @@ class TestDocParserEdgeCases:
         file_path.write_bytes(b"Test")
 
         mocker.patch("shutil.which", return_value="/usr/bin/catdoc")
-        mocker.patch("subprocess.run", return_value=mocker.Mock(
-            returncode=0,
-            stdout="Extracted text",
-            stderr=""
-        ))
+        mocker.patch(
+            "subprocess.run",
+            return_value=mocker.Mock(returncode=0, stdout="Extracted text", stderr=""),
+        )
 
         parser = DocParser(str(file_path))
         result = parser._extract_with_cli()

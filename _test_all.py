@@ -67,9 +67,7 @@ check("format='html'", r.format == "html")
 check("title в metadata", r.metadata.get("title") == title, r.metadata.get("title"))
 check("author в metadata", r.metadata.get("author") == author, r.metadata.get("author"))
 check("heading в structure", any(e["element_type"] == "heading" for e in r.structure))
-check(
-    "paragraph в structure", any(e["element_type"] == "paragraph" for e in r.structure)
-)
+check("paragraph в structure", any(e["element_type"] == "paragraph" for e in r.structure))
 check("link в structure", any(e["element_type"] == "link" for e in r.structure))
 check("текст содержит heading", heading in r.text)
 f_html.unlink()
@@ -80,9 +78,7 @@ pdf_text = rand_text(30)
 
 
 def make_minimal_pdf(text: str) -> bytes:
-    stream_content = f"BT /F1 12 Tf 50 700 Td ({text}) Tj ET".encode(
-        "latin-1", errors="replace"
-    )
+    stream_content = f"BT /F1 12 Tf 50 700 Td ({text}) Tj ET".encode("latin-1", errors="replace")
     objects = {
         1: b"<< /Type /Catalog /Pages 2 0 R >>",
         2: b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -145,18 +141,14 @@ print("\n=== DOCX ===")
 r = DocxParser(str(f_docx)).parse()
 check("success=True", r.success)
 check("format='docx'", r.format == "docx")
-check(
-    "title в metadata", r.metadata.get("title") == docx_title, r.metadata.get("title")
-)
+check("title в metadata", r.metadata.get("title") == docx_title, r.metadata.get("title"))
 check(
     "author в metadata",
     r.metadata.get("author") == docx_author,
     r.metadata.get("author"),
 )
 check("heading в structure", any(e["element_type"] == "heading" for e in r.structure))
-check(
-    "paragraph в structure", any(e["element_type"] == "paragraph" for e in r.structure)
-)
+check("paragraph в structure", any(e["element_type"] == "paragraph" for e in r.structure))
 check("table в structure", any(e["element_type"] == "table" for e in r.structure))
 check("текст содержит heading", docx_heading in r.text)
 f_docx.unlink()

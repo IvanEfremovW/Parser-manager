@@ -10,12 +10,10 @@
 """
 
 import json
-import os
-from dataclasses import dataclass, field, asdict
+import xml.etree.ElementTree as ET
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
-import xml.etree.ElementTree as ET
 
 
 @dataclass
@@ -66,7 +64,7 @@ class TestStatistics:
 class QAStatsCollector:
     """Собирает и управляет QA статистикой из запусков тестов."""
 
-    def __init__(self, output_dir: Optional[str] = None):
+    def __init__(self, output_dir: str | None = None):
         """Инициализировать коллектор.
 
         Args:
@@ -101,10 +99,7 @@ class QAStatsCollector:
 
         # Подсчитать пройденные тесты
         self.stats.passed = (
-            self.stats.total_tests -
-            self.stats.failures -
-            self.stats.skipped -
-            self.stats.errors
+            self.stats.total_tests - self.stats.failures - self.stats.skipped - self.stats.errors
         )
 
         # Разобрать отдельные тест-кейсы для категоризации
@@ -114,7 +109,7 @@ class QAStatsCollector:
 
     def _parse_test_cases(self, testsuite: ET.Element) -> None:
         """Разобрать отдельные тест-кейсы для категоризации.
-        
+
         Категории взаимоисключающие - каждый тест считается только один раз.
         Приоритет категоризации: integration > api > parser > core > models > utils > unit
         """
@@ -135,7 +130,7 @@ class QAStatsCollector:
 
             # Категоризировать по модулю (взаимоисключающе)
             # Приоритет: integration > api > parser > core > models > utils
-            
+
             if "integration" in classname:
                 categories["integration"] += 1
                 categorized = True
@@ -143,19 +138,33 @@ class QAStatsCollector:
                 # API тесты — это юнит-тесты API модуля, считаем их отдельно
                 categories["api"] += 1
                 categorized = True
-            elif "parser" in classname or "html_parser" in classname or "pdf_parser" in classname or "docx_parser" in classname or "doc_parser" in classname or "djvu_parser" in classname:
+            elif (
+                "parser" in classname
+                or "html_parser" in classname
+                or "pdf_parser" in classname
+                or "docx_parser" in classname
+                or "doc_parser" in classname
+                or "djvu_parser" in classname
+            ):
                 categories["parser"] += 1
                 categorized = True
             elif "core" in classname:
                 categories["core"] += 1
                 categorized = True
-            elif "models" in classname or "parsed_content" in classname or "exceptions" in classname:
+            elif (
+                "models" in classname or "parsed_content" in classname or "exceptions" in classname
+            ):
                 categories["models"] += 1
                 categorized = True
-            elif "utils" in classname or "quality" in classname or "semantic" in classname or "file_metrics" in classname:
+            elif (
+                "utils" in classname
+                or "quality" in classname
+                or "semantic" in classname
+                or "file_metrics" in classname
+            ):
                 categories["utils"] += 1
                 categorized = True
-            
+
             # Если не попало в другие категории, но содержит unit — считаем как unit
             if not categorized and "unit" in classname:
                 categories["unit"] += 1
@@ -165,17 +174,21 @@ class QAStatsCollector:
             error = testcase.find("error")
 
             if failure is not None:
-                self.stats.issues.append({
-                    "type": "failure",
-                    "test": f"{classname}.{name}",
-                    "message": failure.get("message", "")[:200],
-                })
+                self.stats.issues.append(
+                    {
+                        "type": "failure",
+                        "test": f"{classname}.{name}",
+                        "message": failure.get("message", "")[:200],
+                    }
+                )
             elif error is not None:
-                self.stats.issues.append({
-                    "type": "error",
-                    "test": f"{classname}.{name}",
-                    "message": error.get("message", "")[:200],
-                })
+                self.stats.issues.append(
+                    {
+                        "type": "error",
+                        "test": f"{classname}.{name}",
+                        "message": error.get("message", "")[:200],
+                    }
+                )
 
         self.stats.by_category = categories
 
@@ -232,7 +245,7 @@ class QAStatsCollector:
             f"{pytest_args}"
         )
 
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
         # Разобрать выводы
         if junit_path.exists():
@@ -311,8 +324,8 @@ class QAStatsCollector:
 
 
 def collect_stats_from_files(
-    junit_xml: Optional[str] = None,
-    coverage_xml: Optional[str] = None,
+    junit_xml: str | None = None,
+    coverage_xml: str | None = None,
 ) -> TestStatistics:
     """Собрать статистику из существующих XML файлов.
 

@@ -5,12 +5,12 @@
 import pytest
 
 from parser_manager.models.exceptions import (
-    ParserError,
-    UnsupportedFormatError,
-    DocumentNotFoundError,
-    ParsingFailedError,
     CorruptedFileError,
+    DocumentNotFoundError,
     InvalidConfigurationError,
+    ParserError,
+    ParsingFailedError,
+    UnsupportedFormatError,
 )
 
 

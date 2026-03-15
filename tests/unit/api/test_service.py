@@ -2,11 +2,12 @@
 Unit tests for parsing service.
 """
 
-import pytest
 from pathlib import Path
-import tempfile
+
+import pytest
 
 from parser_manager.api.service import parse_file_sync, save_upload_to_temp
+from parser_manager.models import DocumentNotFoundError, UnsupportedFormatError
 
 
 class TestParseFileSync:
@@ -69,7 +70,8 @@ class TestParseFileSync:
 
     def test_parse_file_sync_missing_file(self):
         """Test parsing non-existent file."""
-        with pytest.raises(Exception):
+
+        with pytest.raises(DocumentNotFoundError):
             parse_file_sync("/nonexistent/file.html")
 
     def test_parse_file_sync_unsupported_format(self, temp_dir):
@@ -77,7 +79,7 @@ class TestParseFileSync:
         file_path = temp_dir / "test.xyz"
         file_path.write_text("test content")
 
-        with pytest.raises(Exception):
+        with pytest.raises(UnsupportedFormatError):
             parse_file_sync(str(file_path))
 
 
@@ -150,7 +152,7 @@ class TestSaveUploadToTemp:
 
     def test_save_upload_to_temp_unicode_content(self):
         """Test saving unicode content."""
-        content = "Привет мир! 你好世界!".encode("utf-8")
+        content = "Привет мир! 你好世界!".encode()
         result = save_upload_to_temp(content, ".html")
 
         assert result.read_bytes() == content
@@ -211,7 +213,7 @@ class TestSaveUploadToTempEdgeCases:
         assert len(errors) == 0
         assert len(results) == 10
         # All paths should be unique
-        assert len(set(str(r) for r in results)) == 10
+        assert len({str(r) for r in results}) == 10
 
     def test_save_upload_to_temp_directory_permissions(self):
         """Test that temp directory has correct permissions."""

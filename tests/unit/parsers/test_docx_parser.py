@@ -7,13 +7,12 @@ Test Cases:
 
 import pytest
 
-from parser_manager.parsers.documents.docx_parser import DocxParser
 from parser_manager.models import (
-    ParsedContent,
-    DocumentNotFoundError,
     CorruptedFileError,
-    ParsingFailedError,
+    DocumentNotFoundError,
+    ParsedContent,
 )
+from parser_manager.parsers.documents.docx_parser import DocxParser
 
 
 class TestDocxParserInitialization:
@@ -159,7 +158,6 @@ class TestDocxParserEdgeCases:
     def test_docx_parser_document_complex_structure(self, temp_dir):
         """Test parsing DOCX with complex structure."""
         from docx import Document
-        from docx.shared import Pt
 
         file_path = temp_dir / "complex.docx"
         doc = Document()
@@ -196,8 +194,9 @@ class TestDocxParserEdgeCases:
 
     def test_docx_parser_metadata_dates(self, temp_dir):
         """Test that metadata includes dates."""
-        from docx import Document
         from datetime import datetime
+
+        from docx import Document
 
         file_path = temp_dir / "dated.docx"
         doc = Document()
@@ -267,7 +266,7 @@ class TestDocxParserEdgeCases:
 
         file_path = temp_dir / "no_style.docx"
         doc = Document()
-        para = doc.add_paragraph("Test paragraph")
+        doc.add_paragraph("Test paragraph")
         # Some DOCX implementations may have None style
         doc.save(str(file_path))
 

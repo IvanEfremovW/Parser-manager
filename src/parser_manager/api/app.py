@@ -10,7 +10,6 @@ from fastapi.responses import JSONResponse
 from parser_manager.api.jobs import JobRecord, job_queue
 from parser_manager.api.service import save_upload_to_temp
 
-
 app = FastAPI(title="Parser Manager API", version="0.1.0")
 
 
@@ -35,7 +34,7 @@ async def health() -> dict:
 
 @app.post("/jobs/parse")
 async def create_parse_job(
-    file: UploadFile = File(...),
+    file: UploadFile = File(...),  # noqa: B008 - FastAPI File() is standard pattern
     webhook_url: str | None = Form(default=None),
 ):
     content = await file.read()
@@ -73,9 +72,7 @@ async def get_job_result(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
 
     if job.status in {"queued", "processing"}:
-        return JSONResponse(
-            status_code=202, content={"job_id": job_id, "status": job.status}
-        )
+        return JSONResponse(status_code=202, content={"job_id": job_id, "status": job.status})
     if job.status == "failed":
         raise HTTPException(status_code=500, detail=job.error or "Parsing failed")
 

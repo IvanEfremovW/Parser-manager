@@ -6,17 +6,17 @@
 - TC-CORE-002: BaseParser файл не найден
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import MagicMock
+
+import pytest
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import (
-    DocumentNotFoundError,
-    UnsupportedFormatError,
-    ParserError,
-    ParsedContent,
     DocumentMetadata,
+    DocumentNotFoundError,
+    ParsedContent,
+    ParserError,
+    UnsupportedFormatError,
 )
 
 
