@@ -83,9 +83,7 @@ def export_content(content: "ParsedContent", fmt: str, **kwargs: object) -> str:
     fn = _EXPORTERS.get(fmt)
     if fn is None:
         supported = ", ".join(sorted({*_EXPORTERS}))
-        raise ValueError(
-            f"Неизвестный формат экспорта '{fmt}'. Доступные: {supported}"
-        )
+        raise ValueError(f"Неизвестный формат экспорта '{fmt}'. Доступные: {supported}")
     if fmt == "json":
         return fn(content, **kwargs)
     return fn(content)

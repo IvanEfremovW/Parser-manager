@@ -130,7 +130,11 @@ async def get_job_stats(job_id: str):
     """Быстрый доступ к doc_stats задачи: word_count, reading_time и др."""
     job = _require_done_job(job_id)
     result = job.result or {}
-    return {"job_id": job_id, "source_file": job.source_file, "doc_stats": result.get("doc_stats", {})}
+    return {
+        "job_id": job_id,
+        "source_file": job.source_file,
+        "doc_stats": result.get("doc_stats", {}),
+    }
 
 
 @app.get("/jobs/{job_id}/ast", tags=["jobs"])
@@ -138,7 +142,11 @@ async def get_job_ast(job_id: str):
     """Document AST — дерево документа (Document→Section→leaf)."""
     job = _require_done_job(job_id)
     result = job.result or {}
-    return {"job_id": job_id, "source_file": job.source_file, "ast": result.get("ast", {})}
+    return {
+        "job_id": job_id,
+        "source_file": job.source_file,
+        "ast": result.get("ast", {}),
+    }
 
 
 @app.get("/jobs/{job_id}/export/{fmt}", tags=["jobs"])
@@ -161,6 +169,7 @@ async def export_job_result(job_id: str, fmt: str):
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _require_done_job(job_id: str) -> JobRecord:
     """Получить готовую задачу или бросить HTTP-исключение."""

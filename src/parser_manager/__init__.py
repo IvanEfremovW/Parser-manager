@@ -87,6 +87,7 @@ def main(argv=None) -> int:
 
         if args.export_format == "md":
             from parser_manager.utils.exporters import to_markdown
+
             output_text = to_markdown(result)
         else:
             output_text = result.export("json", pretty=args.pretty)

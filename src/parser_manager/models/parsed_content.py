@@ -53,11 +53,13 @@ class ParsedContent:
         # Автоматически вычисляем статистику и AST если не переданы
         if not self.doc_stats and self.success:
             from parser_manager.utils.doc_stats import compute_doc_stats
+
             self.doc_stats = compute_doc_stats(
                 self.text, self.semantic_blocks, self.metadata
             )
         if not self.ast and self.success:
             from parser_manager.utils.ast_builder import build_ast
+
             self.ast = build_ast(self.semantic_blocks)
 
     @property
@@ -92,6 +94,7 @@ class ParsedContent:
     def export(self, fmt: str = "json", **kwargs: object) -> str:
         """Экспортировать результат в заданный формат (json, md)."""
         from parser_manager.utils.exporters import export_content
+
         return export_content(self, fmt, **kwargs)
 
 

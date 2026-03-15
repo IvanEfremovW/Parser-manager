@@ -19,9 +19,7 @@ def compute_doc_stats(text: str, semantic_blocks: list[dict], metadata: dict) ->
     words = re.findall(r"\b\w+\b", clean_text)
     word_count = len(words)
     char_count = len(re.sub(r"\s", "", clean_text))
-    sentence_count = sum(
-        1 for s in re.split(r"[.!?]+", clean_text) if s.strip()
-    )
+    sentence_count = sum(1 for s in re.split(r"[.!?]+", clean_text) if s.strip())
 
     blocks = semantic_blocks or []
     paragraph_count = sum(1 for b in blocks if b.get("element_type") == "paragraph")
