@@ -1,28 +1,51 @@
 services:
 
   # ─────────────────────────────────────────
-  # Основное приложение — парсер
+  # REST API + async jobs
   # ─────────────────────────────────────────
-  parser:
+  api:
     build:
       context: .
       dockerfile: docker/Dockerfile
       target: runtime
-    container_name: parser-manager
+    container_name: parser-manager-api
     volumes:
-      # Монтируем исходный код для live-reload в разработке
       - ./src:/app/src:ro
-      # Папка с файлами для парсинга
       - ./input:/app/input
-      # Папка с результатами
       - ./output:/app/output
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/src
-    # Держим контейнер живым для интерактивной работы
-    stdin_open: true
-    tty: true
-    command: ["python", "-m", "parser_manager"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    command: ["parser-manager-api"]
+
+  # ─────────────────────────────────────────
+  # CLI режим (одиночные запуски)
+  # ─────────────────────────────────────────
+  parser-cli:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: parser-manager-cli
+    volumes:
+      - ./src:/app/src:ro
+      - ./input:/app/input
+      - ./output:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    entrypoint: ["parser-manager"]
+    command: ["--list-formats"]
+    profiles:
+      - cli
 
   # ─────────────────────────────────────────
   # Тесты
