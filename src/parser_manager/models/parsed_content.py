@@ -53,9 +53,7 @@ class ParsedContent:
         if not self.doc_stats and self.success:
             from parser_manager.utils.doc_stats import compute_doc_stats
 
-            self.doc_stats = compute_doc_stats(
-                self.text, self.semantic_blocks, self.metadata
-            )
+            self.doc_stats = compute_doc_stats(self.text, self.semantic_blocks, self.metadata)
         if not self.ast and self.success:
             from parser_manager.utils.ast_builder import build_ast
 
@@ -137,8 +135,8 @@ class TextElement:
     element_type: str  # тип блока: paragraph, heading, table, list, link и т.д.
     level: int = 0  # Для заголовков
     style: dict = field(default_factory=dict)  # Форматирование (bold, italic и т.д.)
-    position: Optional[dict] = None  # Координаты (например, для PDF)
-    page: Optional[int] = None  # Номер страницы
+    position: dict | None = None  # Координаты (например, для PDF)
+    page: int | None = None  # Номер страницы
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:

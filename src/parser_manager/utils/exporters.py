@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from textwrap import fill, indent
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from parser_manager.models.parsed_content import ParsedContent
 
 
-def _meta(content: "ParsedContent") -> dict:
+def _meta(content: ParsedContent) -> dict:
     return content.metadata if isinstance(content.metadata, dict) else {}
 
 
-def _title(content: "ParsedContent") -> str:
+def _title(content: ParsedContent) -> str:
     meta = _meta(content)
     title = str(meta.get("title") or "").strip()
     if title:
@@ -23,7 +24,7 @@ def _title(content: "ParsedContent") -> str:
     return fp.rsplit("/", 1)[-1] or "Документ"
 
 
-def _file_name(content: "ParsedContent") -> str:
+def _file_name(content: ParsedContent) -> str:
     fp = str(content.file_path).replace("\\", "/")
     return fp.rsplit("/", 1)[-1] or str(content.file_path)
 
@@ -69,7 +70,7 @@ def _content_label(block: dict) -> str:
     return f"Page {page} | {btype}"
 
 
-def _iter_summary_rows(content: "ParsedContent") -> list[tuple[str, str]]:
+def _iter_summary_rows(content: ParsedContent) -> list[tuple[str, str]]:
     stats = content.doc_stats or {}
     quality = content.quality or {}
     metrics = content.file_metrics or {}
@@ -101,7 +102,7 @@ def _iter_summary_rows(content: "ParsedContent") -> list[tuple[str, str]]:
     return rows
 
 
-def to_markdown(content: "ParsedContent") -> str:
+def to_markdown(content: ParsedContent) -> str:
     """Конвертировать ParsedContent в Markdown-строку."""
     lines: list[str] = []
 
@@ -124,12 +125,8 @@ def to_markdown(content: "ParsedContent") -> str:
     if quality:
         lines.append("## Качество\n")
         lines.append(f"- **Доля шума:** {_fmt_percent(quality.get('noise_ratio'))}")
-        lines.append(
-            f"- **Битые символы:** {_fmt_percent(quality.get('broken_chars_ratio'))}"
-        )
-        lines.append(
-            f"- **Покрытие таблиц:** {_fmt_percent(quality.get('table_coverage'))}"
-        )
+        lines.append(f"- **Битые символы:** {_fmt_percent(quality.get('broken_chars_ratio'))}")
+        lines.append(f"- **Покрытие таблиц:** {_fmt_percent(quality.get('table_coverage'))}")
         lines.append("")
 
     lines.append("## Содержимое\n")
@@ -148,9 +145,7 @@ def to_markdown(content: "ParsedContent") -> str:
             hashes = "#" * max(1, min(blevel or 2, 6))
             lines.append(f"{hashes} {normalized_text}\n")
         elif btype == "list":
-            for item in [
-                line.strip(" -") for line in text.splitlines() if line.strip()
-            ]:
+            for item in [line.strip(" -") for line in text.splitlines() if line.strip()]:
                 lines.append(f"- {item}")
             lines.append("")
         elif btype == "table":
@@ -158,9 +153,7 @@ def to_markdown(content: "ParsedContent") -> str:
             lines.append(f"```text\n{text}\n```\n")
         elif btype == "link":
             href = (block.get("metadata") or {}).get("href", "")
-            lines.append(
-                f"- [{normalized_text}]({href})" if href else f"- {normalized_text}"
-            )
+            lines.append(f"- [{normalized_text}]({href})" if href else f"- {normalized_text}")
         else:
             lines.append(f"### {_content_label(block)}\n")
             lines.append(f"{normalized_text}\n")
@@ -168,7 +161,7 @@ def to_markdown(content: "ParsedContent") -> str:
     return "\n".join(lines)
 
 
-def to_report(content: "ParsedContent") -> str:
+def to_report(content: ParsedContent) -> str:
     """Конвертировать ParsedContent в читаемый текстовый отчёт."""
     title = _title(content)
     stats = content.doc_stats or {}
@@ -187,9 +180,7 @@ def to_report(content: "ParsedContent") -> str:
         lines.append("Качество")
         lines.append("-------")
         lines.append(f"Доля шума      : {_fmt_percent(quality.get('noise_ratio'))}")
-        lines.append(
-            f"Битые символы  : {_fmt_percent(quality.get('broken_chars_ratio'))}"
-        )
+        lines.append(f"Битые символы  : {_fmt_percent(quality.get('broken_chars_ratio'))}")
         lines.append(f"Покрытие таблиц: {_fmt_percent(quality.get('table_coverage'))}")
         lines.append("")
 
@@ -243,11 +234,9 @@ def to_report(content: "ParsedContent") -> str:
     return "\n".join(lines).rstrip()
 
 
-def to_json(content: "ParsedContent", pretty: bool = True) -> str:
+def to_json(content: ParsedContent, pretty: bool = True) -> str:
     """Конвертировать ParsedContent в JSON-строку."""
-    return json.dumps(
-        content.to_dict(), ensure_ascii=False, indent=2 if pretty else None
-    )
+    return json.dumps(content.to_dict(), ensure_ascii=False, indent=2 if pretty else None)
 
 
 _EXPORTERS: dict[str, Callable[..., str]] = {
@@ -260,7 +249,7 @@ _EXPORTERS: dict[str, Callable[..., str]] = {
 }
 
 
-def export_content(content: "ParsedContent", fmt: str, **kwargs: object) -> str:
+def export_content(content: ParsedContent, fmt: str, **kwargs: object) -> str:
     """
     Экспортировать ParsedContent в заданный формат.
 

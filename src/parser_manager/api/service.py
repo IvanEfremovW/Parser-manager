@@ -24,6 +24,7 @@ def export_file_sync(result_dict: dict, fmt: str) -> str:
         fmt: 'json', 'md' или 'report'
     """
     import json
+
     from parser_manager.models.parsed_content import ParsedContent
     from parser_manager.utils.exporters import export_content
 

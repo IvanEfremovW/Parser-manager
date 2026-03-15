@@ -2,9 +2,7 @@
 Parser Manager - синтаксический анализатор для HTML и документов
 """
 
-import logging
 import argparse
-import json
 import logging
 from pathlib import Path
 

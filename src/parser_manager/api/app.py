@@ -10,7 +10,6 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from parser_manager.api.jobs import JobRecord, job_queue
 from parser_manager.api.service import export_file_sync, save_upload_to_temp
 
-
 app = FastAPI(
     title="Parser Manager API",
     version="0.2.0",
@@ -151,9 +150,7 @@ async def get_job_ast(job_id: str):
 async def export_job_result(job_id: str, fmt: str):
     """Экспортировать результат задачи в нужный формат: json, md или report."""
     if fmt not in {"json", "md", "report"}:
-        raise HTTPException(
-            status_code=400, detail="Поддерживаемые форматы: json, md, report"
-        )
+        raise HTTPException(status_code=400, detail="Поддерживаемые форматы: json, md, report")
 
     job = _require_done_job(job_id)
     result = job.result or {}
@@ -179,9 +176,7 @@ def _require_done_job(job_id: str) -> JobRecord:
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     if job.status in {"queued", "processing"}:
-        raise HTTPException(
-            status_code=202, detail=f"Job {job_id} is still {job.status}"
-        )
+        raise HTTPException(status_code=202, detail=f"Job {job_id} is still {job.status}")
     if job.status == "failed":
         raise HTTPException(status_code=500, detail=job.error or "Parsing failed")
     return job
