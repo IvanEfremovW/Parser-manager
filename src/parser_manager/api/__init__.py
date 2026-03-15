@@ -1,4 +1,4 @@
-"""API package for Parser Manager."""
+"""Пакет API для Parser Manager."""
 
 from .app import app, run_api
 

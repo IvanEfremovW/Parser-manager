@@ -25,7 +25,7 @@ class ParsedContent:
     """
 
     file_path: str
-    format: str  # 'html', 'pdf', 'docx', 'doc', 'djvu'
+    format: str  # один из форматов: html, pdf, docx, doc, djvu
     text: str
     metadata: dict = field(default_factory=dict)
     structure: list = field(default_factory=list)
@@ -39,7 +39,7 @@ class ParsedContent:
     success: bool = True
     error: Optional[str] = None
 
-    # Поддерживаемые форматы — расширяемый набор
+    # Поддерживаемые форматы (набор можно расширять)
     SUPPORTED_FORMATS: frozenset = frozenset({"html", "pdf", "docx", "doc", "djvu"})
 
     def __post_init__(self):
@@ -137,10 +137,10 @@ class TextElement:
     """Элемент текста с метаинформацией"""
 
     content: str
-    element_type: str  # 'paragraph', 'heading', 'table', 'list', 'link', etc
+    element_type: str  # тип блока: paragraph, heading, table, list, link и т.д.
     level: int = 0  # Для заголовков
-    style: dict = field(default_factory=dict)  # Форматирование (bold, italic, etc)
-    position: Optional[dict] = None  # Координаты (для PDF)
+    style: dict = field(default_factory=dict)  # Форматирование (bold, italic и т.д.)
+    position: Optional[dict] = None  # Координаты (например, для PDF)
     page: Optional[int] = None  # Номер страницы
     metadata: dict = field(default_factory=dict)
 

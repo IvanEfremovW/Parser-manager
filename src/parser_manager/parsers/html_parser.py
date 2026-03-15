@@ -66,7 +66,7 @@ class HtmlParser(BaseParser):
         detected = chardet.detect(raw)
         detected_encoding = detected.get("encoding") or "utf-8"
 
-        # 3) Безопасный fallback: cp1251 для RU-контента, затем replacement
+        # 3) Безопасный резервный вариант: cp1251 для русскоязычного контента, затем замена ошибок
         for candidate in (detected_encoding, "cp1251", "utf-8"):
             try:
                 text = raw.decode(candidate)
