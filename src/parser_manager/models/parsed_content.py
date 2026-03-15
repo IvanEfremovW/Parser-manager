@@ -32,6 +32,8 @@ class ParsedContent:
     semantic_blocks: list = field(default_factory=list)
     quality: dict = field(default_factory=dict)
     file_metrics: dict = field(default_factory=dict)
+    doc_stats: dict = field(default_factory=dict)
+    ast: dict = field(default_factory=dict)
     raw_data: dict = field(default_factory=dict)
     parsed_at: datetime = field(default_factory=datetime.now)
     success: bool = True
@@ -47,6 +49,16 @@ class ParsedContent:
 
         if not self.success and not self.error:
             raise ValueError("Если success=False, необходимо указать error")
+
+        # Автоматически вычисляем статистику и AST если не переданы
+        if not self.doc_stats and self.success:
+            from parser_manager.utils.doc_stats import compute_doc_stats
+            self.doc_stats = compute_doc_stats(
+                self.text, self.semantic_blocks, self.metadata
+            )
+        if not self.ast and self.success:
+            from parser_manager.utils.ast_builder import build_ast
+            self.ast = build_ast(self.semantic_blocks)
 
     @property
     def text_length(self) -> int:
@@ -69,11 +81,18 @@ class ParsedContent:
             "semantic_blocks": self.semantic_blocks,
             "quality": self.quality,
             "file_metrics": self.file_metrics,
+            "doc_stats": self.doc_stats,
+            "ast": self.ast,
             "raw_data": self.raw_data,
             "parsed_at": self.parsed_at.isoformat(),
             "success": self.success,
             "error": self.error,
         }
+
+    def export(self, fmt: str = "json", **kwargs: object) -> str:
+        """Экспортировать результат в заданный формат (json, md)."""
+        from parser_manager.utils.exporters import export_content
+        return export_content(self, fmt, **kwargs)
 
 
 @dataclass

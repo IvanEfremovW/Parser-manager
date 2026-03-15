@@ -3,7 +3,6 @@ Parser Manager - синтаксический анализатор для HTML �
 """
 
 import logging
-import json
 import argparse
 from pathlib import Path
 from parser_manager.core import BaseParser, ParserFactory
@@ -45,6 +44,13 @@ def _build_cli_parser() -> argparse.ArgumentParser:
         help="Красивый (pretty) JSON вывод",
     )
     parser.add_argument(
+        "--export-format",
+        choices=["json", "md"],
+        default="json",
+        dest="export_format",
+        help="Формат экспорта: json (по умолчанию) или md (Markdown)",
+    )
+    parser.add_argument(
         "--version",
         action="store_true",
         help="Показать версию и завершить работу",
@@ -78,24 +84,26 @@ def main(argv=None) -> int:
     try:
         parser_instance = ParserFactory.create_parser(args.file)
         result = parser_instance.parse()
-        payload = result.to_dict()
 
-        json_text = json.dumps(
-            payload,
-            ensure_ascii=False,
-            indent=2 if args.pretty else None,
-        )
+        if args.export_format == "md":
+            from parser_manager.utils.exporters import to_markdown
+            output_text = to_markdown(result)
+        else:
+            output_text = result.export("json", pretty=args.pretty)
 
         if args.output:
             output_path = Path(args.output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(json_text + "\n", encoding="utf-8")
+            output_path.write_text(output_text + "\n", encoding="utf-8")
             print(f"OK: результат сохранён в {output_path}")
         else:
-            print(json_text)
+            print(output_text)
 
+        stats = result.doc_stats
         print(
             f"Готово: {Path(args.file).name} | format={result.format} | "
+            f"words={stats.get('word_count', 0)} | "
+            f"read={stats.get('reading_time_min', 0)} min | "
             f"text_length={result.text_length}"
         )
         return 0
