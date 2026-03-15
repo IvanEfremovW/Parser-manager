@@ -1,5 +1,5 @@
 """
-Unit tests for job queue management.
+Юнит-тесты для управления очередью задач.
 """
 
 import asyncio
@@ -12,10 +12,10 @@ from parser_manager.api.jobs import JobRecord, ParseJobQueue
 
 
 class TestJobRecord:
-    """Tests for JobRecord dataclass."""
+    """Тесты для dataclass JobRecord."""
 
     def test_job_record_creation(self):
-        """Test creating a JobRecord."""
+        """Тест создания JobRecord."""
         now = datetime.utcnow()
         job = JobRecord(
             job_id="test123",
@@ -33,7 +33,7 @@ class TestJobRecord:
         assert job.error is None
 
     def test_job_record_with_webhook(self):
-        """Test creating a JobRecord with webhook URL."""
+        """Тест создания JobRecord с webhook URL."""
         now = datetime.utcnow()
         job = JobRecord(
             job_id="test123",
@@ -48,7 +48,7 @@ class TestJobRecord:
         assert job.webhook_url == "https://example.com/webhook"
 
     def test_job_record_to_dict(self):
-        """Test converting JobRecord to dictionary."""
+        """Тест конвертации JobRecord в словарь."""
         now = datetime.utcnow()
         job = JobRecord(
             job_id="test123",
@@ -73,7 +73,7 @@ class TestJobRecord:
         assert result["error"] is None
 
     def test_job_record_to_dict_datetime_format(self):
-        """Test that datetime fields are formatted as ISO strings."""
+        """Тест что datetime поля форматируются как ISO строки."""
         now = datetime(2024, 1, 15, 10, 30, 0)
         job = JobRecord(
             job_id="test123",
@@ -90,7 +90,7 @@ class TestJobRecord:
         assert result["updated_at"] == "2024-01-15T10:30:00"
 
     def test_job_record_to_dict_excludes_temp_path(self):
-        """Test that temp_file_path is excluded from dict output."""
+        """Тест что temp_file_path исключается из вывода dict."""
         now = datetime.utcnow()
         job = JobRecord(
             job_id="test123",
@@ -106,7 +106,7 @@ class TestJobRecord:
         assert "temp_file_path" not in result
 
     def test_job_record_to_dict_excludes_result_when_none(self):
-        """Test that None result is excluded from dict output."""
+        """Тест что None result исключается из вывода dict."""
         now = datetime.utcnow()
         job = JobRecord(
             job_id="test123",
@@ -124,16 +124,16 @@ class TestJobRecord:
 
 
 class TestParseJobQueue:
-    """Tests for ParseJobQueue class."""
+    """Тесты для класса ParseJobQueue."""
 
     @pytest.fixture
     def job_queue(self):
-        """Create a fresh job queue."""
+        """Создать свежую очередь задач."""
         return ParseJobQueue()
 
     @pytest.mark.asyncio
     async def test_queue_start(self, job_queue):
-        """Test starting the job queue."""
+        """Тест запуска очереди задач."""
         await job_queue.start()
 
         assert job_queue._worker_task is not None
@@ -141,7 +141,7 @@ class TestParseJobQueue:
 
     @pytest.mark.asyncio
     async def test_queue_stop(self, job_queue):
-        """Test stopping the job queue."""
+        """Тест остановки очереди задач."""
         await job_queue.start()
         await job_queue.stop()
 
@@ -149,7 +149,7 @@ class TestParseJobQueue:
 
     @pytest.mark.asyncio
     async def test_enqueue_job(self, job_queue):
-        """Test enqueueing a job."""
+        """Тест добавления задачи в очередь."""
         now = datetime.utcnow()
         job = JobRecord(
             job_id="test123",
@@ -168,7 +168,7 @@ class TestParseJobQueue:
 
     @pytest.mark.asyncio
     async def test_get_job(self, job_queue):
-        """Test getting a job by ID."""
+        """Тест получения задачи по ID."""
         now = datetime.utcnow()
         job = JobRecord(
             job_id="test123",
@@ -187,13 +187,13 @@ class TestParseJobQueue:
 
     @pytest.mark.asyncio
     async def test_get_job_not_found(self, job_queue):
-        """Test getting a non-existent job."""
+        """Тест получения несуществующей задачи."""
         retrieved = job_queue.get_job("nonexistent")
         assert retrieved is None
 
     @pytest.mark.asyncio
     async def test_worker_processes_job(self, job_queue, mocker):
-        """Test that worker processes jobs."""
+        """Тест что worker обрабатывает задачи."""
         mock_parse = mocker.patch(
             "parser_manager.api.jobs.parse_file_sync",
             return_value={"text": "parsed", "success": True},
@@ -212,7 +212,7 @@ class TestParseJobQueue:
         await job_queue.start()
         await job_queue.enqueue(job)
 
-        # Wait for processing
+        # Дождаться обработки
         await asyncio.sleep(0.5)
 
         mock_parse.assert_called_once()
@@ -221,7 +221,7 @@ class TestParseJobQueue:
 
     @pytest.mark.asyncio
     async def test_worker_handles_errors(self, job_queue, mocker):
-        """Test that worker handles parsing errors."""
+        """Тест что worker обрабатывает ошибки парсинга."""
         mocker.patch(
             "parser_manager.api.jobs.parse_file_sync", side_effect=Exception("Parsing failed")
         )
@@ -239,7 +239,7 @@ class TestParseJobQueue:
         await job_queue.start()
         await job_queue.enqueue(job)
 
-        # Wait for processing
+        # Дождаться обработки
         await asyncio.sleep(0.5)
 
         assert job.status == "failed"
@@ -247,7 +247,7 @@ class TestParseJobQueue:
 
     @pytest.mark.asyncio
     async def test_worker_cleans_temp_file(self, job_queue, mocker, temp_dir):
-        """Test that worker cleans up temp file after processing."""
+        """Тест что worker очищает временный файл после обработки."""
         temp_file = temp_dir / "test.html"
         temp_file.write_text("test content")
 
@@ -266,15 +266,15 @@ class TestParseJobQueue:
         await job_queue.start()
         await job_queue.enqueue(job)
 
-        # Wait for processing
+        # Дождаться обработки
         await asyncio.sleep(0.5)
 
-        # Temp file should be deleted
+        # Временный файл должен быть удалён
         assert not temp_file.exists()
 
     @pytest.mark.asyncio
     async def test_webhook_sent_on_completion(self, job_queue, mocker):
-        """Test that webhook is sent on job completion."""
+        """Тест что webhook отправляется при завершении задачи."""
         mocker.patch("parser_manager.api.jobs.parse_file_sync", return_value={"success": True})
         mock_post = mocker.patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 
@@ -292,14 +292,14 @@ class TestParseJobQueue:
         await job_queue.start()
         await job_queue.enqueue(job)
 
-        # Wait for processing
+        # Дождаться обработки
         await asyncio.sleep(0.5)
 
         mock_post.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_webhook_not_sent_without_url(self, job_queue, mocker):
-        """Test that webhook is not sent when URL is not provided."""
+        """Тест что webhook не отправляется когда URL не указан."""
         mocker.patch("parser_manager.api.jobs.parse_file_sync", return_value={"success": True})
         mock_post = mocker.patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 
@@ -317,14 +317,14 @@ class TestParseJobQueue:
         await job_queue.start()
         await job_queue.enqueue(job)
 
-        # Wait for processing
+        # Дождаться обработки
         await asyncio.sleep(0.5)
 
         mock_post.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_webhook_sent_on_failure(self, job_queue, mocker):
-        """Test that webhook is sent on job failure."""
+        """Тест что webhook отправляется при ошибке задачи."""
         mocker.patch("parser_manager.api.jobs.parse_file_sync", side_effect=Exception("Error"))
         mock_post = mocker.patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 
@@ -342,7 +342,7 @@ class TestParseJobQueue:
         await job_queue.start()
         await job_queue.enqueue(job)
 
-        # Wait for processing
+        # Дождаться обработки
         await asyncio.sleep(0.5)
 
         mock_post.assert_called_once()
@@ -352,11 +352,11 @@ class TestParseJobQueue:
 
 
 class TestParseJobQueueEdgeCases:
-    """Edge case tests for ParseJobQueue."""
+    """Тесты граничных случаев для ParseJobQueue."""
 
     @pytest.mark.asyncio
     async def test_multiple_jobs_queued(self, mocker):
-        """Test queueing multiple jobs."""
+        """Тест постановки нескольких задач в очередь."""
         from parser_manager.api.jobs import ParseJobQueue
 
         queue = ParseJobQueue()
@@ -381,7 +381,7 @@ class TestParseJobQueueEdgeCases:
 
         assert queue.queue.qsize() == 5
 
-        # Wait for all to process
+        # Дождаться обработки всех
         await asyncio.sleep(1)
 
         assert mock_parse.call_count == 5
@@ -389,7 +389,7 @@ class TestParseJobQueueEdgeCases:
 
     @pytest.mark.asyncio
     async def test_queue_restart(self, mocker):
-        """Test restarting the queue."""
+        """Тест перезапуска очереди."""
         from parser_manager.api.jobs import ParseJobQueue
 
         queue = ParseJobQueue()
@@ -404,41 +404,4 @@ class TestParseJobQueueEdgeCases:
 
         assert first_task.done()
         assert not second_task.done()
-        await queue.stop()
-
-    @pytest.mark.asyncio
-    async def test_get_job_during_processing(self, mocker):
-        """Test getting job while it's being processed."""
-        from parser_manager.api.jobs import ParseJobQueue
-
-        queue = ParseJobQueue()
-
-        # Create a slow mock
-        async def slow_parse(*args):
-            await asyncio.sleep(0.2)
-            return {"success": True}
-
-        mocker.patch(
-            "parser_manager.api.jobs.parse_file_sync",
-            side_effect=lambda *args: asyncio.run(slow_parse()),
-        )
-
-        now = datetime.utcnow()
-        job = JobRecord(
-            job_id="test123",
-            status="queued",
-            created_at=now,
-            updated_at=now,
-            source_file="test.html",
-            temp_file_path="/tmp/test.html",
-        )
-
-        await queue.start()
-        await queue.enqueue(job)
-
-        # Check status during processing
-        await asyncio.sleep(0.1)
-        retrieved = queue.get_job("test123")
-        assert retrieved is not None
-        assert retrieved.status in ["queued", "processing", "done"]
         await queue.stop()

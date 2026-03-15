@@ -1,31 +1,33 @@
 """
-Unit tests for parsing service.
+Юнит-тесты для сервиса парсинга.
 """
 
+import json
+import threading
 from pathlib import Path
 
 import pytest
 
-from parser_manager.api.service import parse_file_sync, save_upload_to_temp
+from parser_manager.api.service import export_file_sync, parse_file_sync, save_upload_to_temp
 from parser_manager.models import DocumentNotFoundError, UnsupportedFormatError
 
 
 class TestParseFileSync:
-    """Tests for parse_file_sync function."""
+    """Тесты для функции parse_file_sync."""
 
     def test_parse_file_sync_html(self, sample_html_file):
-        """Test parsing HTML file."""
+        """Тест парсинга HTML файла."""
         result = parse_file_sync(str(sample_html_file))
 
         assert isinstance(result, dict)
         assert result["format"] == "html"
         assert result["success"] is True
-        assert "text_length" in result  # to_dict() returns text_length, not text
+        assert "text_length" in result  # to_dict() возвращает text_length, а не text
         assert "metadata" in result
         assert "structure" in result
 
     def test_parse_file_sync_pdf(self, sample_pdf_file):
-        """Test parsing PDF file."""
+        """Тест парсинга PDF файла."""
         result = parse_file_sync(str(sample_pdf_file))
 
         assert isinstance(result, dict)
@@ -33,7 +35,7 @@ class TestParseFileSync:
         assert result["success"] is True
 
     def test_parse_file_sync_docx(self, sample_docx_file):
-        """Test parsing DOCX file."""
+        """Тест парсинга DOCX файла."""
         result = parse_file_sync(str(sample_docx_file))
 
         assert isinstance(result, dict)
@@ -41,19 +43,19 @@ class TestParseFileSync:
         assert result["success"] is True
 
     def test_parse_file_sync_returns_dict(self, sample_html_file):
-        """Test that result is a dictionary."""
+        """Тест что результат возвращается как словарь."""
         result = parse_file_sync(str(sample_html_file))
 
         assert isinstance(result, dict)
 
     def test_parse_file_sync_has_required_fields(self, sample_html_file):
-        """Test that result has all required fields."""
+        """Тест что результат содержит все обязательные поля."""
         result = parse_file_sync(str(sample_html_file))
 
         required_fields = [
             "file_path",
             "format",
-            "text_length",  # to_dict() returns text_length, not text
+            "text_length",  # to_dict() возвращает text_length, а не text
             "metadata",
             "structure",
             "semantic_blocks",
@@ -69,13 +71,12 @@ class TestParseFileSync:
             assert field in result
 
     def test_parse_file_sync_missing_file(self):
-        """Test parsing non-existent file."""
-
+        """Тест парсинга несуществующего файла."""
         with pytest.raises(DocumentNotFoundError):
             parse_file_sync("/nonexistent/file.html")
 
     def test_parse_file_sync_unsupported_format(self, temp_dir):
-        """Test parsing unsupported format."""
+        """Тест парсинга неподдерживаемого формата."""
         file_path = temp_dir / "test.xyz"
         file_path.write_text("test content")
 
@@ -84,10 +85,10 @@ class TestParseFileSync:
 
 
 class TestSaveUploadToTemp:
-    """Tests for save_upload_to_temp function."""
+    """Тесты для функции save_upload_to_temp."""
 
     def test_save_upload_to_temp_creates_file(self):
-        """Test that function creates a temp file."""
+        """Тест что функция создаёт временный файл."""
         content = b"Test content"
         result = save_upload_to_temp(content, ".html")
 
@@ -96,21 +97,21 @@ class TestSaveUploadToTemp:
         assert result.read_bytes() == content
 
     def test_save_upload_to_temp_correct_suffix(self):
-        """Test that file has correct suffix."""
+        """Тест что файл имеет правильный суффикс."""
         content = b"Test content"
         result = save_upload_to_temp(content, ".pdf")
 
         assert result.suffix == ".pdf"
 
     def test_save_upload_to_temp_default_suffix(self):
-        """Test default suffix when not provided."""
+        """Тест суффикса по умолчанию когда не указан."""
         content = b"Test content"
         result = save_upload_to_temp(content, suffix=None)
 
         assert result.suffix == ".bin"
 
     def test_save_upload_to_temp_in_correct_dir(self):
-        """Test that file is created in correct directory."""
+        """Тест что файл создан в правильной директории."""
         content = b"Test content"
         result = save_upload_to_temp(content, ".html")
 
@@ -118,7 +119,7 @@ class TestSaveUploadToTemp:
         assert result.parent.exists()
 
     def test_save_upload_to_temp_unique_names(self):
-        """Test that multiple calls create unique files."""
+        """Тест что множественные вызовы создают уникальные файлы."""
         content = b"Test content"
 
         result1 = save_upload_to_temp(content, ".html")
@@ -128,14 +129,14 @@ class TestSaveUploadToTemp:
         assert result1.name != result2.name
 
     def test_save_upload_to_temp_preserves_content(self):
-        """Test that file content is preserved."""
+        """Тест что содержимое файла сохраняется."""
         content = b"\x00\x01\x02\x03" * 1000
         result = save_upload_to_temp(content, ".bin")
 
         assert result.read_bytes() == content
 
     def test_save_upload_to_temp_large_file(self):
-        """Test saving large file."""
+        """Тест сохранения большого файла."""
         content = b"x" * 10_000_000  # 10 MB
         result = save_upload_to_temp(content, ".bin")
 
@@ -143,7 +144,7 @@ class TestSaveUploadToTemp:
         assert result.stat().st_size == 10_000_000
 
     def test_save_upload_to_temp_empty_content(self):
-        """Test saving empty content."""
+        """Тест сохранения пустого содержимого."""
         content = b""
         result = save_upload_to_temp(content, ".html")
 
@@ -151,49 +152,43 @@ class TestSaveUploadToTemp:
         assert result.stat().st_size == 0
 
     def test_save_upload_to_temp_unicode_content(self):
-        """Test saving unicode content."""
+        """Тест сохранения unicode содержимого."""
         content = "Привет мир! 你好世界!".encode()
         result = save_upload_to_temp(content, ".html")
 
         assert result.read_bytes() == content
 
     def test_save_upload_to_temp_cleanup(self):
-        """Test that temp files can be cleaned up."""
+        """Тест что временные файлы могут быть очищены."""
         content = b"Test content"
         result = save_upload_to_temp(content, ".html")
 
-        # Verify file exists
+        # Проверить что файл существует
         assert result.exists()
 
-        # Clean up
+        # Очистить
         result.unlink()
 
         assert not result.exists()
 
-
-class TestSaveUploadToTempEdgeCases:
-    """Edge case tests for save_upload_to_temp."""
-
     def test_save_upload_to_temp_special_characters_in_suffix(self):
-        """Test with special characters in suffix."""
+        """Тест со спецсимволами в суффиксе."""
         content = b"Test"
         result = save_upload_to_temp(content, ".tar.gz")
 
-        # Should handle the suffix
+        # Должен обработать суффикс
         assert result.suffix == ".gz"
 
     def test_save_upload_to_temp_no_leading_dot(self):
-        """Test suffix without leading dot."""
+        """Тест суффикса без ведущей точки."""
         content = b"Test"
         result = save_upload_to_temp(content, "html")
 
-        # tempfile.NamedTemporaryFile handles this
+        # tempfile.NamedTemporaryFile обрабатывает это
         assert result.exists()
 
     def test_save_upload_to_temp_concurrent_calls(self):
-        """Test concurrent calls to save_upload_to_temp."""
-        import threading
-
+        """Тест параллельных вызовов save_upload_to_temp."""
         results = []
         errors = []
 
@@ -212,15 +207,82 @@ class TestSaveUploadToTempEdgeCases:
 
         assert len(errors) == 0
         assert len(results) == 10
-        # All paths should be unique
+        # Все пути должны быть уникальны
         assert len({str(r) for r in results}) == 10
 
     def test_save_upload_to_temp_directory_permissions(self):
-        """Test that temp directory has correct permissions."""
+        """Тест что временная директория имеет правильные права."""
         content = b"Test"
         result = save_upload_to_temp(content, ".html")
 
-        # Should be able to read and write
+        # Должно быть возможно читать и писать
         assert result.read_bytes() == content
         result.write_bytes(b"modified")
         assert result.read_bytes() == b"modified"
+
+
+class TestExportFileSync:
+    """Тесты для функции export_file_sync."""
+
+    def test_export_file_sync_json(self):
+        """Тест экспорта в формат JSON."""
+        result_dict = {
+            "file_path": "/test/file.html",
+            "format": "html",
+            "text": "",
+            "semantic_blocks": [],
+            "doc_stats": {},
+            "ast": {},
+            "metadata": {},
+            "quality": {},
+            "file_metrics": {},
+            "success": True,
+            "error": None,
+        }
+
+        result = export_file_sync(result_dict, "json")
+
+        assert isinstance(result, str)
+        # Должен быть валидный JSON
+        parsed = json.loads(result)
+        assert parsed["format"] == "html"
+
+    def test_export_file_sync_md(self):
+        """Тест экспорта в формат Markdown."""
+        result_dict = {
+            "file_path": "/test/file.html",
+            "format": "html",
+            "text": "",
+            "semantic_blocks": [],
+            "doc_stats": {},
+            "ast": {},
+            "metadata": {},
+            "quality": {},
+            "file_metrics": {},
+            "success": True,
+            "error": None,
+        }
+
+        result = export_file_sync(result_dict, "md")
+
+        assert isinstance(result, str)
+
+    def test_export_file_sync_report(self):
+        """Тест экспорта в формат отчёта."""
+        result_dict = {
+            "file_path": "/test/file.html",
+            "format": "html",
+            "text": "",
+            "semantic_blocks": [],
+            "doc_stats": {},
+            "ast": {},
+            "metadata": {},
+            "quality": {},
+            "file_metrics": {},
+            "success": True,
+            "error": None,
+        }
+
+        result = export_file_sync(result_dict, "report")
+
+        assert isinstance(result, str)
