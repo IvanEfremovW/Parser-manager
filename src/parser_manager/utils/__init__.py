@@ -7,7 +7,7 @@ from .quality import score_quality
 from .file_metrics import collect_file_metrics
 from .doc_stats import compute_doc_stats
 from .ast_builder import build_ast
-from .exporters import export_content, to_markdown, to_json
+from .exporters import export_content, to_markdown, to_json, to_report
 
 __all__ = [
     "derive_semantic_blocks",
@@ -20,4 +20,5 @@ __all__ = [
     "export_content",
     "to_markdown",
     "to_json",
+    "to_report",
 ]

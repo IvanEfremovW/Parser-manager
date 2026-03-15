@@ -14,7 +14,7 @@ from parser_manager.api.service import export_file_sync, save_upload_to_temp
 app = FastAPI(
     title="Parser Manager API",
     version="0.2.0",
-    description="Унифицированный парсинг HTML/PDF/DOCX/DOC/DJVU → JSON/Markdown/AST",
+    description="Унифицированный парсинг HTML/PDF/DOCX/DOC/DJVU → JSON/Markdown/читабельный отчет/AST",
 )
 
 
@@ -35,14 +35,14 @@ async def service_info() -> dict:
         "service": "Parser Manager API",
         "version": "0.2.0",
         "formats_supported": [".html", ".htm", ".pdf", ".docx", ".doc", ".djvu"],
-        "export_formats": ["json", "md"],
+        "export_formats": ["json", "md", "report"],
         "features": [
             "semantic_blocks  — унифицированные смысловые блоки (heading/paragraph/table/list/link)",
             "quality          — оценка качества текста (completeness, noise, broken chars)",
             "file_metrics     — размер файла, длина текста, статистика блоков",
             "doc_stats        — word_count, paragraph_count, reading_time и др.",
             "ast              — дерево документа Document→Section→leaf",
-            "export           — вывод в JSON или Markdown",
+            "export           — вывод в JSON, Markdown или человеко-ориентированный отчет",
             "async_jobs       — файл принимается, парсинг идёт фоново, статус опрашивается",
             "webhooks         — POST-уведомление на указанный URL после завершения",
         ],
@@ -54,7 +54,7 @@ async def service_info() -> dict:
             "GET  /jobs/{id}/result": "Полный результат (JSON) после завершения",
             "GET  /jobs/{id}/stats": "Только doc_stats задачи",
             "GET  /jobs/{id}/ast": "Только Document AST задачи",
-            "GET  /jobs/{id}/export/{fmt}": "Экспорт результата в json или md",
+            "GET  /jobs/{id}/export/{fmt}": "Экспорт результата в json, md или report",
         },
     }
 
@@ -151,9 +151,11 @@ async def get_job_ast(job_id: str):
 
 @app.get("/jobs/{job_id}/export/{fmt}", tags=["jobs"])
 async def export_job_result(job_id: str, fmt: str):
-    """Экспортировать результат задачи в нужный формат: json или md."""
-    if fmt not in {"json", "md"}:
-        raise HTTPException(status_code=400, detail="Поддерживаемые форматы: json, md")
+    """Экспортировать результат задачи в нужный формат: json, md или report."""
+    if fmt not in {"json", "md", "report"}:
+        raise HTTPException(
+            status_code=400, detail="Поддерживаемые форматы: json, md, report"
+        )
 
     job = _require_done_job(job_id)
     result = job.result or {}
@@ -165,6 +167,8 @@ async def export_job_result(job_id: str, fmt: str):
 
     if fmt == "md":
         return PlainTextResponse(content=exported, media_type="text/markdown")
+    if fmt == "report":
+        return PlainTextResponse(content=exported, media_type="text/plain")
     return PlainTextResponse(content=exported, media_type="application/json")
 
 

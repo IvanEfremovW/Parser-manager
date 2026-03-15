@@ -92,7 +92,7 @@ class ParsedContent:
         }
 
     def export(self, fmt: str = "json", **kwargs: object) -> str:
-        """Экспортировать результат в заданный формат (json, md)."""
+        """Экспортировать результат в заданный формат (json, md, report)."""
         from parser_manager.utils.exporters import export_content
 
         return export_content(self, fmt, **kwargs)

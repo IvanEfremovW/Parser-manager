@@ -21,7 +21,7 @@ def export_file_sync(result_dict: dict, fmt: str) -> str:
 
     Args:
         result_dict: словарь из result.to_dict()
-        fmt: 'json' или 'md'
+        fmt: 'json', 'md' или 'report'
     """
     import json
     from parser_manager.models.parsed_content import ParsedContent
@@ -45,7 +45,7 @@ def export_file_sync(result_dict: dict, fmt: str) -> str:
         success=bool(result_dict.get("success", True)),
         error=result_dict.get("error"),
     )
-    return export_content(pc, "md")
+    return export_content(pc, fmt)
 
 
 def save_upload_to_temp(content: bytes, suffix: str) -> Path:
