@@ -15,6 +15,12 @@ from parser_manager.models import (
     ParsingFailedError,
     CorruptedFileError,
 )
+from parser_manager.utils import (
+    derive_semantic_blocks,
+    semantic_summary,
+    score_quality,
+    collect_file_metrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +54,9 @@ class DocxParser(BaseParser):
 
         for table in doc.tables:
             for row in table.rows:
-                row_cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                row_cells = [
+                    cell.text.strip() for cell in row.cells if cell.text.strip()
+                ]
                 if row_cells:
                     blocks.append(" | ".join(row_cells))
 
@@ -87,7 +95,11 @@ class DocxParser(BaseParser):
                 tokens = style_name.split()
                 if len(tokens) > 1 and tokens[-1].isdigit():
                     level = int(tokens[-1])
-                elements.append(TextElement(content=text, element_type="heading", level=level))
+                elements.append(
+                    TextElement(content=text, element_type="heading", level=level)
+                )
+            elif "list" in style_name:
+                elements.append(TextElement(content=text, element_type="list"))
             else:
                 elements.append(TextElement(content=text, element_type="paragraph"))
 
@@ -98,7 +110,9 @@ class DocxParser(BaseParser):
                 rows.append(row_text)
             table_content = "\n".join(rows).strip()
             if table_content:
-                elements.append(TextElement(content=table_content, element_type="table"))
+                elements.append(
+                    TextElement(content=table_content, element_type="table")
+                )
 
         return [element.to_dict() for element in elements]
 
@@ -107,6 +121,11 @@ class DocxParser(BaseParser):
             text = self.extract_text()
             metadata = self.extract_metadata()
             structure = self.extract_structure()
+            semantic_blocks = derive_semantic_blocks(text, structure)
+            quality = score_quality(text, semantic_blocks)
+            file_metrics = collect_file_metrics(
+                str(self.file_path), semantic_blocks, text
+            )
 
             return ParsedContent(
                 file_path=str(self.file_path),
@@ -114,7 +133,15 @@ class DocxParser(BaseParser):
                 text=text,
                 metadata=metadata.to_dict(),
                 structure=structure,
-                raw_data={"paragraphs": len([s for s in structure if s["element_type"] == "paragraph"])},
+                semantic_blocks=semantic_blocks,
+                quality=quality,
+                file_metrics=file_metrics,
+                raw_data={
+                    "paragraphs": len(
+                        [s for s in structure if s["element_type"] == "paragraph"]
+                    ),
+                    "semantic_summary": semantic_summary(semantic_blocks),
+                },
                 success=True,
             )
         except (CorruptedFileError, ParsingFailedError):

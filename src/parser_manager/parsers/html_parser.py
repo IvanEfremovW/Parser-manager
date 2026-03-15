@@ -13,6 +13,12 @@ from parser_manager.models import (
     TextElement,
     ParsingFailedError,
 )
+from parser_manager.utils import (
+    derive_semantic_blocks,
+    semantic_summary,
+    score_quality,
+    collect_file_metrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +29,7 @@ class HtmlParser(BaseParser):
     supported_extensions: tuple = (".html", ".htm")
     format_name: str = "html"
 
-    _BLOCK_TAGS = {"p", "div", "section", "article", "blockquote", "pre", "li"}
+    _BLOCK_TAGS = {"p", "div", "section", "article", "blockquote", "pre"}
     _HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 
     def _load_soup(self) -> BeautifulSoup:
@@ -33,6 +39,7 @@ class HtmlParser(BaseParser):
             text = raw.decode(encoding)
         else:
             import chardet
+
             detected = chardet.detect(raw)
             text = raw.decode(detected.get("encoding") or "utf-8", errors="replace")
         return BeautifulSoup(text, "lxml")
@@ -106,12 +113,20 @@ class HtmlParser(BaseParser):
 
             if tag.name in self._HEADING_TAGS:
                 level = int(tag.name[1])
-                elements.append(TextElement(content=text, element_type="heading", level=level))
+                elements.append(
+                    TextElement(content=text, element_type="heading", level=level)
+                )
             elif tag.name in self._BLOCK_TAGS:
                 elements.append(TextElement(content=text, element_type="paragraph"))
+            elif tag.name == "li":
+                elements.append(TextElement(content=text, element_type="list"))
             elif tag.name == "a":
                 href = tag.get("href", "")
-                elements.append(TextElement(content=text, element_type="link", metadata={"href": href}))
+                elements.append(
+                    TextElement(
+                        content=text, element_type="link", metadata={"href": href}
+                    )
+                )
             elif tag.name == "table":
                 elements.append(TextElement(content=text, element_type="table"))
 
@@ -122,6 +137,11 @@ class HtmlParser(BaseParser):
             text = self.extract_text()
             metadata = self.extract_metadata()
             structure = self.extract_structure()
+            semantic_blocks = derive_semantic_blocks(text, structure)
+            quality = score_quality(text, semantic_blocks)
+            file_metrics = collect_file_metrics(
+                str(self.file_path), semantic_blocks, text
+            )
 
             return ParsedContent(
                 file_path=str(self.file_path),
@@ -129,6 +149,10 @@ class HtmlParser(BaseParser):
                 text=text,
                 metadata=metadata.to_dict(),
                 structure=structure,
+                semantic_blocks=semantic_blocks,
+                quality=quality,
+                file_metrics=file_metrics,
+                raw_data={"semantic_summary": semantic_summary(semantic_blocks)},
                 success=True,
             )
         except Exception as exc:

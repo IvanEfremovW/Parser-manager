@@ -16,6 +16,12 @@ from parser_manager.models import (
     ParsingFailedError,
     CorruptedFileError,
 )
+from parser_manager.utils import (
+    derive_semantic_blocks,
+    semantic_summary,
+    score_quality,
+    collect_file_metrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +35,7 @@ class PdfParser(BaseParser):
 
     supported_extensions: tuple = (".pdf",)
     format_name: str = "pdf"
+    quality_fallback_threshold: float = 0.55
 
     def _open_plumber(self) -> pdfplumber.PDF:
         try:
@@ -71,6 +78,26 @@ class PdfParser(BaseParser):
                     pages_text.append(cleaned)
         return "\n\n".join(pages_text)
 
+    def _extract_text_with_pypdf(self) -> tuple[str, list[dict]]:
+        reader = self._open_pypdf()
+        page_elements: list[dict] = []
+        pages_text: list[str] = []
+
+        for page_idx, page in enumerate(reader.pages, start=1):
+            raw = page.extract_text() or ""
+            cleaned = self._clean_text(raw)
+            if cleaned:
+                pages_text.append(cleaned)
+                page_elements.append(
+                    TextElement(
+                        content=cleaned,
+                        element_type="paragraph",
+                        page=page_idx,
+                    ).to_dict()
+                )
+
+        return "\n\n".join(pages_text), page_elements
+
     def extract_metadata(self) -> DocumentMetadata:
         reader = self._open_pypdf()
         info = reader.metadata or {}
@@ -86,7 +113,9 @@ class PdfParser(BaseParser):
                 s = raw.lstrip("D:").replace("'", "")
                 for fmt in ("%Y%m%d%H%M%S%z", "%Y%m%d%H%M%S", "%Y%m%d"):
                     try:
-                        return datetime.strptime(s[:len(fmt.replace("%", "XX").replace("X", ""))], fmt)
+                        return datetime.strptime(
+                            s[: len(fmt.replace("%", "XX").replace("X", ""))], fmt
+                        )
                     except ValueError:
                         continue
             except Exception:
@@ -104,8 +133,10 @@ class PdfParser(BaseParser):
             modification_date=_parse_date(_get("/ModDate")),
             pages=num_pages,
             custom_fields={
-                k: str(v) for k, v in info.items()
-                if k not in {"/Title", "/Author", "/Subject", "/CreationDate", "/ModDate"}
+                k: str(v)
+                for k, v in info.items()
+                if k
+                not in {"/Title", "/Author", "/Subject", "/CreationDate", "/ModDate"}
                 and v
             },
         )
@@ -118,28 +149,54 @@ class PdfParser(BaseParser):
                 for table in page.extract_tables():
                     if not table:
                         continue
-                    rows = [
-                        " | ".join(cell or "" for cell in row)
-                        for row in table
-                    ]
+                    rows = [" | ".join(cell or "" for cell in row) for row in table]
                     elements.append(
-                        TextElement(content="\n".join(rows), element_type="table", page=page_num)
+                        TextElement(
+                            content="\n".join(rows), element_type="table", page=page_num
+                        )
                     )
 
                 raw = page.extract_text(x_tolerance=2, y_tolerance=2)
                 cleaned = self._clean_text(raw)
                 if cleaned:
                     elements.append(
-                        TextElement(content=cleaned, element_type="paragraph", page=page_num)
+                        TextElement(
+                            content=cleaned, element_type="paragraph", page=page_num
+                        )
                     )
 
         return [e.to_dict() for e in elements]
 
     def parse(self) -> ParsedContent:
         try:
-            text = self.extract_text()
             metadata = self.extract_metadata()
             structure = self.extract_structure()
+            text = self.extract_text()
+
+            semantic_blocks = derive_semantic_blocks(text, structure)
+            quality = score_quality(text, semantic_blocks)
+
+            backend_used = "pdfplumber"
+            fallback_attempted = False
+
+            if quality["overall_score"] < self.quality_fallback_threshold:
+                fallback_attempted = True
+                fallback_text, fallback_structure = self._extract_text_with_pypdf()
+                fallback_semantic = derive_semantic_blocks(
+                    fallback_text, fallback_structure
+                )
+                fallback_quality = score_quality(fallback_text, fallback_semantic)
+
+                if fallback_quality["overall_score"] > quality["overall_score"]:
+                    text = fallback_text
+                    structure = fallback_structure
+                    semantic_blocks = fallback_semantic
+                    quality = fallback_quality
+                    backend_used = "pypdf2"
+
+            file_metrics = collect_file_metrics(
+                str(self.file_path), semantic_blocks, text
+            )
 
             return ParsedContent(
                 file_path=str(self.file_path),
@@ -147,7 +204,15 @@ class PdfParser(BaseParser):
                 text=text,
                 metadata=metadata.to_dict(),
                 structure=structure,
-                raw_data={"pages": metadata.pages},
+                semantic_blocks=semantic_blocks,
+                quality=quality,
+                file_metrics=file_metrics,
+                raw_data={
+                    "pages": metadata.pages,
+                    "backend_used": backend_used,
+                    "fallback_attempted": fallback_attempted,
+                    "semantic_summary": semantic_summary(semantic_blocks),
+                },
                 success=True,
             )
         except (CorruptedFileError, ParsingFailedError):

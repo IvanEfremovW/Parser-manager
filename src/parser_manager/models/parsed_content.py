@@ -29,6 +29,9 @@ class ParsedContent:
     text: str
     metadata: dict = field(default_factory=dict)
     structure: list = field(default_factory=list)
+    semantic_blocks: list = field(default_factory=list)
+    quality: dict = field(default_factory=dict)
+    file_metrics: dict = field(default_factory=dict)
     raw_data: dict = field(default_factory=dict)
     parsed_at: datetime = field(default_factory=datetime.now)
     success: bool = True
@@ -63,6 +66,9 @@ class ParsedContent:
             "text_length": self.text_length,
             "metadata": self.metadata,
             "structure": self.structure,
+            "semantic_blocks": self.semantic_blocks,
+            "quality": self.quality,
+            "file_metrics": self.file_metrics,
             "raw_data": self.raw_data,
             "parsed_at": self.parsed_at.isoformat(),
             "success": self.success,
