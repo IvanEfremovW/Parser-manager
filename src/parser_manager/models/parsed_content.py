@@ -3,7 +3,6 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
 from datetime import datetime
 
 
@@ -37,7 +36,7 @@ class ParsedContent:
     raw_data: dict = field(default_factory=dict)
     parsed_at: datetime = field(default_factory=datetime.now)
     success: bool = True
-    error: Optional[str] = None
+    error: str | None = None
 
     # Поддерживаемые форматы (набор можно расширять)
     SUPPORTED_FORMATS: frozenset = frozenset({"html", "pdf", "docx", "doc", "djvu"})
@@ -54,9 +53,7 @@ class ParsedContent:
         if not self.doc_stats and self.success:
             from parser_manager.utils.doc_stats import compute_doc_stats
 
-            self.doc_stats = compute_doc_stats(
-                self.text, self.semantic_blocks, self.metadata
-            )
+            self.doc_stats = compute_doc_stats(self.text, self.semantic_blocks, self.metadata)
         if not self.ast and self.success:
             from parser_manager.utils.ast_builder import build_ast
 
@@ -102,14 +99,14 @@ class ParsedContent:
 class DocumentMetadata:
     """Метаданные документа"""
 
-    title: Optional[str] = None
-    author: Optional[str] = None
-    subject: Optional[str] = None
-    creation_date: Optional[datetime] = None
-    modification_date: Optional[datetime] = None
-    pages: Optional[int] = None
-    language: Optional[str] = None
-    encoding: Optional[str] = None
+    title: str | None = None
+    author: str | None = None
+    subject: str | None = None
+    creation_date: datetime | None = None
+    modification_date: datetime | None = None
+    pages: int | None = None
+    language: str | None = None
+    encoding: str | None = None
     custom_fields: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -118,9 +115,7 @@ class DocumentMetadata:
             "title": self.title,
             "author": self.author,
             "subject": self.subject,
-            "creation_date": self.creation_date.isoformat()
-            if self.creation_date
-            else None,
+            "creation_date": self.creation_date.isoformat() if self.creation_date else None,
             "modification_date": self.modification_date.isoformat()
             if self.modification_date
             else None,
@@ -140,8 +135,8 @@ class TextElement:
     element_type: str  # тип блока: paragraph, heading, table, list, link и т.д.
     level: int = 0  # Для заголовков
     style: dict = field(default_factory=dict)  # Форматирование (bold, italic и т.д.)
-    position: Optional[dict] = None  # Координаты (например, для PDF)
-    page: Optional[int] = None  # Номер страницы
+    position: dict | None = None  # Координаты (например, для PDF)
+    page: int | None = None  # Номер страницы
     metadata: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:

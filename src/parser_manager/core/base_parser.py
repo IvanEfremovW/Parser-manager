@@ -2,18 +2,17 @@
 Абстрактный базовый класс для всех парсеров
 """
 
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-import logging
 
 from parser_manager.models import (
-    ParsedContent,
     DocumentMetadata,
-    ParserError,
     DocumentNotFoundError,
+    ParsedContent,
+    ParserError,
     UnsupportedFormatError,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -102,10 +101,7 @@ class BaseParser(ABC):
         if result.format != self.format_name:
             return False
 
-        if not result.success and result.error is None:
-            return False
-
-        return True
+        return result.success or result.error is not None
 
     def get_file_info(self) -> dict:
         """Получить информацию о файле"""

@@ -16,17 +16,17 @@ import olefile  # type: ignore[import-untyped]
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import (
-    ParsedContent,
-    DocumentMetadata,
-    TextElement,
-    ParsingFailedError,
     CorruptedFileError,
+    DocumentMetadata,
+    ParsedContent,
+    ParsingFailedError,
+    TextElement,
 )
 from parser_manager.utils import (
-    derive_semantic_blocks,
-    semantic_summary,
-    score_quality,
     collect_file_metrics,
+    derive_semantic_blocks,
+    score_quality,
+    semantic_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -75,14 +75,10 @@ class DocParser(BaseParser):
         data = self.file_path.read_bytes()
 
         utf16_candidates = re.findall(rb"(?:[\x20-\x7E]\x00){4,}", data)
-        utf16_text = [
-            chunk.decode("utf-16le", errors="ignore") for chunk in utf16_candidates
-        ]
+        utf16_text = [chunk.decode("utf-16le", errors="ignore") for chunk in utf16_candidates]
 
         ascii_candidates = re.findall(rb"[\x20-\x7E]{5,}", data)
-        ascii_text = [
-            chunk.decode("utf-8", errors="ignore") for chunk in ascii_candidates
-        ]
+        ascii_text = [chunk.decode("utf-8", errors="ignore") for chunk in ascii_candidates]
 
         lines: list[str] = []
         seen: set[str] = set()
@@ -111,9 +107,7 @@ class DocParser(BaseParser):
 
     def extract_metadata(self) -> DocumentMetadata:
         if not olefile.isOleFile(str(self.file_path)):
-            raise CorruptedFileError(
-                f"Файл '{self.file_path.name}' не является валидным OLE DOC"
-            )
+            raise CorruptedFileError(f"Файл '{self.file_path.name}' не является валидным OLE DOC")
 
         try:
             with olefile.OleFileIO(str(self.file_path)) as ole:
@@ -146,14 +140,9 @@ class DocParser(BaseParser):
     def extract_structure(self) -> list:
         text = self.extract_text()
         paragraphs = [part.strip() for part in text.split("\n\n") if part.strip()]
-        elements = [
-            TextElement(content=p, element_type="paragraph").to_dict()
-            for p in paragraphs
-        ]
+        elements = [TextElement(content=p, element_type="paragraph").to_dict() for p in paragraphs]
         if not elements and text.strip():
-            elements = [
-                TextElement(content=text.strip(), element_type="paragraph").to_dict()
-            ]
+            elements = [TextElement(content=text.strip(), element_type="paragraph").to_dict()]
         return elements
 
     def parse(self) -> ParsedContent:
@@ -163,9 +152,7 @@ class DocParser(BaseParser):
             structure = self.extract_structure()
             semantic_blocks = derive_semantic_blocks(text, structure)
             quality = score_quality(text, semantic_blocks)
-            file_metrics = collect_file_metrics(
-                str(self.file_path), semantic_blocks, text
-            )
+            file_metrics = collect_file_metrics(str(self.file_path), semantic_blocks, text)
 
             return ParsedContent(
                 file_path=str(self.file_path),

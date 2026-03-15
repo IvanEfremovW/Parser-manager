@@ -2,21 +2,23 @@
 Parser Manager - синтаксический анализатор для HTML и документов
 """
 
-import logging
 import argparse
+import logging
 from pathlib import Path
+
 from parser_manager.core import BaseParser, ParserFactory
 from parser_manager.models import (
-    ParsedContent,
-    DocumentMetadata,
-    TextElement,
-    ParserError,
-    DocumentNotFoundError,
-    UnsupportedFormatError,
-    ParsingFailedError,
     CorruptedFileError,
+    DocumentMetadata,
+    DocumentNotFoundError,
+    ParsedContent,
+    ParserError,
+    ParsingFailedError,
+    TextElement,
+    UnsupportedFormatError,
 )
 
+logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 

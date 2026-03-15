@@ -3,17 +3,16 @@ Models package - содержит модели данных для Parser Manage
 """
 
 from .exceptions import (
-    ParserError,
-    UnsupportedFormatError,
-    DocumentNotFoundError,
-    ParsingFailedError,
     CorruptedFileError,
+    DocumentNotFoundError,
     InvalidConfigurationError,
+    ParserError,
+    ParsingFailedError,
+    UnsupportedFormatError,
 )
-
 from .parsed_content import (
-    ParsedContent,
     DocumentMetadata,
+    ParsedContent,
     TextElement,
 )
 

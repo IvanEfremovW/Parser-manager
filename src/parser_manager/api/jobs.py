@@ -1,6 +1,7 @@
 """Асинхронная очередь задач парсинга."""
 
 import asyncio
+import contextlib
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -48,10 +49,8 @@ class ParseJobQueue:
     async def stop(self) -> None:
         if self._worker_task and not self._worker_task.done():
             self._worker_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._worker_task
-            except asyncio.CancelledError:
-                pass
 
     async def enqueue(self, job: JobRecord) -> None:
         self.jobs[job.job_id] = job

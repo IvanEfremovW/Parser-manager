@@ -10,16 +10,16 @@ from bs4.element import Tag
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import (
-    ParsedContent,
     DocumentMetadata,
-    TextElement,
+    ParsedContent,
     ParsingFailedError,
+    TextElement,
 )
 from parser_manager.utils import (
-    derive_semantic_blocks,
-    semantic_summary,
-    score_quality,
     collect_file_metrics,
+    derive_semantic_blocks,
+    score_quality,
+    semantic_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -101,9 +101,7 @@ class HtmlParser(BaseParser):
             return None
 
         charset_tag = head.find("meta", attrs={"charset": True})
-        encoding = (
-            self._attr_to_str(charset_tag.get("charset")) if charset_tag else None
-        )
+        encoding = self._attr_to_str(charset_tag.get("charset")) if charset_tag else None
         if not encoding:
             ct_tag = head.find("meta", attrs={"http-equiv": "Content-Type"})
             if ct_tag:
@@ -147,9 +145,7 @@ class HtmlParser(BaseParser):
 
             if node.name in self._HEADING_TAGS:
                 level = int(node.name[1])
-                elements.append(
-                    TextElement(content=text, element_type="heading", level=level)
-                )
+                elements.append(TextElement(content=text, element_type="heading", level=level))
             elif node.name in self._BLOCK_TAGS:
                 elements.append(TextElement(content=text, element_type="paragraph"))
             elif node.name == "li":
@@ -157,9 +153,7 @@ class HtmlParser(BaseParser):
             elif node.name == "a":
                 href = self._attr_to_str(node.get("href")) or ""
                 elements.append(
-                    TextElement(
-                        content=text, element_type="link", metadata={"href": href}
-                    )
+                    TextElement(content=text, element_type="link", metadata={"href": href})
                 )
             elif node.name == "table":
                 elements.append(TextElement(content=text, element_type="table"))
@@ -173,9 +167,7 @@ class HtmlParser(BaseParser):
             structure = self.extract_structure()
             semantic_blocks = derive_semantic_blocks(text, structure)
             quality = score_quality(text, semantic_blocks)
-            file_metrics = collect_file_metrics(
-                str(self.file_path), semantic_blocks, text
-            )
+            file_metrics = collect_file_metrics(str(self.file_path), semantic_blocks, text)
 
             return ParsedContent(
                 file_path=str(self.file_path),

@@ -10,17 +10,17 @@ from PyPDF2 import PdfReader
 
 from parser_manager.core.base_parser import BaseParser
 from parser_manager.models import (
-    ParsedContent,
-    DocumentMetadata,
-    TextElement,
-    ParsingFailedError,
     CorruptedFileError,
+    DocumentMetadata,
+    ParsedContent,
+    ParsingFailedError,
+    TextElement,
 )
 from parser_manager.utils import (
-    derive_semantic_blocks,
-    semantic_summary,
-    score_quality,
     collect_file_metrics,
+    derive_semantic_blocks,
+    score_quality,
+    semantic_summary,
 )
 
 logger = logging.getLogger(__name__)
@@ -135,9 +135,7 @@ class PdfParser(BaseParser):
             custom_fields={
                 k: str(v)
                 for k, v in info.items()
-                if k
-                not in {"/Title", "/Author", "/Subject", "/CreationDate", "/ModDate"}
-                and v
+                if k not in {"/Title", "/Author", "/Subject", "/CreationDate", "/ModDate"} and v
             },
         )
 
@@ -151,18 +149,14 @@ class PdfParser(BaseParser):
                         continue
                     rows = [" | ".join(cell or "" for cell in row) for row in table]
                     elements.append(
-                        TextElement(
-                            content="\n".join(rows), element_type="table", page=page_num
-                        )
+                        TextElement(content="\n".join(rows), element_type="table", page=page_num)
                     )
 
                 raw = page.extract_text(x_tolerance=2, y_tolerance=2)
                 cleaned = self._clean_text(raw)
                 if cleaned:
                     elements.append(
-                        TextElement(
-                            content=cleaned, element_type="paragraph", page=page_num
-                        )
+                        TextElement(content=cleaned, element_type="paragraph", page=page_num)
                     )
 
         return [e.to_dict() for e in elements]
@@ -182,9 +176,7 @@ class PdfParser(BaseParser):
             if quality["overall_score"] < self.quality_fallback_threshold:
                 fallback_attempted = True
                 fallback_text, fallback_structure = self._extract_text_with_pypdf()
-                fallback_semantic = derive_semantic_blocks(
-                    fallback_text, fallback_structure
-                )
+                fallback_semantic = derive_semantic_blocks(fallback_text, fallback_structure)
                 fallback_quality = score_quality(fallback_text, fallback_semantic)
 
                 if fallback_quality["overall_score"] > quality["overall_score"]:
@@ -194,9 +186,7 @@ class PdfParser(BaseParser):
                     quality = fallback_quality
                     backend_used = "pypdf2"
 
-            file_metrics = collect_file_metrics(
-                str(self.file_path), semantic_blocks, text
-            )
+            file_metrics = collect_file_metrics(str(self.file_path), semantic_blocks, text)
 
             return ParsedContent(
                 file_path=str(self.file_path),
