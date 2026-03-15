@@ -10,10 +10,14 @@ def normalize_block(block: dict, default_page: int | None = None) -> dict:
     if element_type not in ALLOWED_BLOCK_TYPES:
         element_type = "paragraph"
 
-    content = str(block.get("content", "")).strip()
+    content_raw = block.get("content")
+    content = str(content_raw).strip() if content_raw is not None else ""
     level = int(block.get("level", 0) or 0)
     position = block.get("position") or None
     page = block.get("page", default_page)
+
+    metadata_raw = block.get("metadata")
+    metadata = metadata_raw if metadata_raw is not None else {}
 
     return {
         "content": content,
@@ -21,7 +25,7 @@ def normalize_block(block: dict, default_page: int | None = None) -> dict:
         "level": level,
         "position": position,
         "page": page,
-        "metadata": block.get("metadata", {}) or {},
+        "metadata": metadata,
     }
 
 
@@ -57,6 +61,8 @@ def derive_semantic_blocks(text: str, structure: list[dict]) -> list[dict]:
 
 
 def semantic_summary(blocks: list[dict]) -> dict:
+    if not blocks:
+        blocks = []
     counts = Counter(b.get("element_type", "paragraph") for b in blocks)
     return {
         "total_blocks": len(blocks),
