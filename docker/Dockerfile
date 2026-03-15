@@ -1,12 +1,13 @@
 # ─────────────────────────────────────────
 # Stage 1: builder — установка зависимостей
 # ─────────────────────────────────────────
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 WORKDIR /app
 
 # Системные зависимости для сборки пакетов
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -o Acquire::Retries=5 \
+    && apt-get install -y --no-install-recommends -o Acquire::Retries=5 \
     build-essential \
     gcc \
     libxml2-dev \
@@ -15,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Копируем только манифест для кэширования слоя зависимостей
 COPY pyproject.toml .
+COPY README.md .
 COPY src/ src/
 
 # Устанавливаем пакет и все зависимости
@@ -24,12 +26,13 @@ RUN pip install --upgrade pip \
 # ─────────────────────────────────────────
 # Stage 2: runtime — финальный образ
 # ─────────────────────────────────────────
-FROM python:3.12-slim AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 
 WORKDIR /app
 
 # Системные зависимости для работы парсеров
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update -o Acquire::Retries=5 \
+    && apt-get install -y --no-install-recommends -o Acquire::Retries=5 \
     # python-magic (определение MIME типов)
     libmagic1 \
     # lxml (парсинг XML/HTML)
@@ -55,6 +58,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Копируем исходный код
 COPY src/ src/
 COPY pyproject.toml .
+COPY README.md .
 
 # Папки для входных и выходных файлов
 RUN mkdir -p /app/input /app/output
