@@ -1,16 +1,21 @@
-"""REST API для Parser Manager с async jobs и webhook callbacks."""
+"""REST API для Parser Manager с асинхронными задачами и webhook-уведомлениями."""
 
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from parser_manager.api.jobs import JobRecord, job_queue
-from parser_manager.api.service import save_upload_to_temp
+from parser_manager.api.service import export_file_sync, save_upload_to_temp
 
-app = FastAPI(title="Parser Manager API", version="0.1.0")
+
+app = FastAPI(
+    title="Parser Manager API",
+    version="0.2.0",
+    description="Унифицированный парсинг HTML/PDF/DOCX/DOC/DJVU → JSON/Markdown/читабельный отчет/AST",
+)
 
 
 @app.on_event("startup")
@@ -23,7 +28,38 @@ async def _on_shutdown() -> None:
     await job_queue.stop()
 
 
-@app.get("/health")
+@app.get("/", tags=["info"])
+async def service_info() -> dict:
+    """Описание всех возможностей сервиса."""
+    return {
+        "service": "Parser Manager API",
+        "version": "0.2.0",
+        "formats_supported": [".html", ".htm", ".pdf", ".docx", ".doc", ".djvu"],
+        "export_formats": ["json", "md", "report"],
+        "features": [
+            "semantic_blocks  — унифицированные смысловые блоки (heading/paragraph/table/list/link)",
+            "quality          — оценка качества текста (completeness, noise, broken chars)",
+            "file_metrics     — размер файла, длина текста, статистика блоков",
+            "doc_stats        — word_count, paragraph_count, reading_time и др.",
+            "ast              — дерево документа Document→Section→leaf",
+            "export           — вывод в JSON, Markdown или человеко-ориентированный отчет",
+            "async_jobs       — файл принимается, парсинг идёт фоново, статус опрашивается",
+            "webhooks         — POST-уведомление на указанный URL после завершения",
+        ],
+        "endpoints": {
+            "GET  /": "Эта страница",
+            "GET  /health": "Статус сервиса + размер очереди",
+            "POST /jobs/parse": "Загрузить файл → получить job_id",
+            "GET  /jobs/{id}": "Статус задачи",
+            "GET  /jobs/{id}/result": "Полный результат (JSON) после завершения",
+            "GET  /jobs/{id}/stats": "Только doc_stats задачи",
+            "GET  /jobs/{id}/ast": "Только Document AST задачи",
+            "GET  /jobs/{id}/export/{fmt}": "Экспорт результата в json, md или report",
+        },
+    }
+
+
+@app.get("/health", tags=["info"])
 async def health() -> dict:
     return {
         "status": "ok",
@@ -32,11 +68,12 @@ async def health() -> dict:
     }
 
 
-@app.post("/jobs/parse")
+@app.post("/jobs/parse", tags=["jobs"])
 async def create_parse_job(
     file: UploadFile = File(...),  # noqa: B008 - FastAPI File() is standard pattern
     webhook_url: str | None = Form(default=None),
 ):
+    """Загрузить файл на парсинг. Возвращает job_id для отслеживания."""
     content = await file.read()
     suffix = Path(file.filename or "").suffix.lower() or ".bin"
     temp_path = save_upload_to_temp(content, suffix=suffix)
@@ -57,16 +94,18 @@ async def create_parse_job(
     return {"job_id": job_id, "status": job.status}
 
 
-@app.get("/jobs/{job_id}")
+@app.get("/jobs/{job_id}", tags=["jobs"])
 async def get_job_status(job_id: str):
+    """Получить статус задачи."""
     job = job_queue.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job.to_dict()
 
 
-@app.get("/jobs/{job_id}/result")
+@app.get("/jobs/{job_id}/result", tags=["jobs"])
 async def get_job_result(job_id: str):
+    """Полный результат парсинга в JSON (включает doc_stats, ast, semantic_blocks и др.)"""
     job = job_queue.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -82,6 +121,70 @@ async def get_job_result(job_id: str):
         "source_file": job.source_file,
         "result": job.result,
     }
+
+
+@app.get("/jobs/{job_id}/stats", tags=["jobs"])
+async def get_job_stats(job_id: str):
+    """Быстрый доступ к doc_stats задачи: word_count, reading_time и др."""
+    job = _require_done_job(job_id)
+    result = job.result or {}
+    return {
+        "job_id": job_id,
+        "source_file": job.source_file,
+        "doc_stats": result.get("doc_stats", {}),
+    }
+
+
+@app.get("/jobs/{job_id}/ast", tags=["jobs"])
+async def get_job_ast(job_id: str):
+    """Document AST — дерево документа (Document→Section→leaf)."""
+    job = _require_done_job(job_id)
+    result = job.result or {}
+    return {
+        "job_id": job_id,
+        "source_file": job.source_file,
+        "ast": result.get("ast", {}),
+    }
+
+
+@app.get("/jobs/{job_id}/export/{fmt}", tags=["jobs"])
+async def export_job_result(job_id: str, fmt: str):
+    """Экспортировать результат задачи в нужный формат: json, md или report."""
+    if fmt not in {"json", "md", "report"}:
+        raise HTTPException(
+            status_code=400, detail="Поддерживаемые форматы: json, md, report"
+        )
+
+    job = _require_done_job(job_id)
+    result = job.result or {}
+
+    try:
+        exported = export_file_sync(result, fmt)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if fmt == "md":
+        return PlainTextResponse(content=exported, media_type="text/markdown")
+    if fmt == "report":
+        return PlainTextResponse(content=exported, media_type="text/plain")
+    return PlainTextResponse(content=exported, media_type="application/json")
+
+
+# ── служебные функции ────────────────────────────────────────────────────────
+
+
+def _require_done_job(job_id: str) -> JobRecord:
+    """Получить готовую задачу или бросить HTTP-исключение."""
+    job = job_queue.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.status in {"queued", "processing"}:
+        raise HTTPException(
+            status_code=202, detail=f"Job {job_id} is still {job.status}"
+        )
+    if job.status == "failed":
+        raise HTTPException(status_code=500, detail=job.error or "Parsing failed")
+    return job
 
 
 def run_api() -> None:

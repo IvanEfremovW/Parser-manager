@@ -51,13 +51,30 @@ class HtmlParser(BaseParser):
         raw = self.file_path.read_bytes()
         encoding = self.options.get("encoding", None)
         if encoding:
-            text = raw.decode(encoding)
-        else:
-            import chardet
+            return BeautifulSoup(raw, "lxml", from_encoding=str(encoding))
 
-            detected = chardet.detect(raw)
-            text = raw.decode(detected.get("encoding") or "utf-8", errors="replace")
-        return BeautifulSoup(text, "lxml")
+        # 1) Предпочитаем UTF-8 как самый частый вариант
+        try:
+            text = raw.decode("utf-8")
+            return BeautifulSoup(text, "lxml")
+        except UnicodeDecodeError:
+            pass
+
+        # 2) Если UTF-8 не подходит — пробуем автоопределение
+        import chardet
+
+        detected = chardet.detect(raw)
+        detected_encoding = detected.get("encoding") or "utf-8"
+
+        # 3) Безопасный резервный вариант: cp1251 для русскоязычного контента, затем замена ошибок
+        for candidate in (detected_encoding, "cp1251", "utf-8"):
+            try:
+                text = raw.decode(candidate)
+                return BeautifulSoup(text, "lxml")
+            except (LookupError, UnicodeDecodeError):
+                continue
+
+        return BeautifulSoup(raw.decode("utf-8", errors="replace"), "lxml")
 
     def extract_text(self) -> str:
         soup = self._load_soup()
