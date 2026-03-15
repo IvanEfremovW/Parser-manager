@@ -1,7 +1,7 @@
 # Parser Manager
 
 Унифицированный парсинг `html/pdf/docx/doc/djvu` в единый semantic JSON для RAG/LLM.  
-Поддерживает CLI, REST API с async-очередью и webhook-уведомлениями.
+Поддерживает CLI, REST API с асинхронной очередью и webhook-уведомлениями.
 
 ---
 
@@ -10,7 +10,7 @@
 | Расширение | Парсер |
 |---|---|
 | `.html`, `.htm` | `HtmlParser` (BeautifulSoup + lxml) |
-| `.pdf` | `PdfParser` (pdfplumber → PyPDF2 fallback) |
+| `.pdf` | `PdfParser` (pdfplumber → резервный `PyPDF2`) |
 | `.docx` | `DocxParser` (python-docx) |
 | `.doc` | `DocParser` (oletools) |
 | `.djvu` | `DjvuParser` |
@@ -21,7 +21,7 @@
 
 | Поле | Описание |
 |---|---|
-| `text` | Извлечённый plain-text |
+| `text` | Извлечённый обычный текст |
 | `semantic_blocks` | Унифицированные блоки: `heading / paragraph / table / list / link` |
 | `quality` | Оценка качества: `overall_score`, `noise_ratio`, `broken_chars_ratio`, `text_completeness`, `structure_score` |
 | `doc_stats` | Статистика документа: `word_count`, `sentence_count`, `paragraph_count`, `pages`, `reading_time_min` |
@@ -36,8 +36,8 @@
 | Формат | Ключ | Описание |
 |---|---|---|
 | JSON | `json` | Полная машино-читаемая структура |
-| Markdown | `md` | Структурированный Markdown с метаданными и quality-секцией |
-| Отчёт | `report` | Человеко-читаемый текстовый отчёт (Summary / Quality / Content) |
+| Markdown | `md` | Структурированный Markdown с метаданными и разделом качества |
+| Отчёт | `report` | Текстовый отчёт для чтения (Сводка / Качество / Содержимое) |
 
 ---
 
@@ -53,7 +53,7 @@ python -m parser_manager --file ./input/sample.pdf
 # Сохранить результат в JSON
 python -m parser_manager --file ./input/sample.pdf --output ./output/result.json
 
-# Pretty-print JSON
+# Вывести JSON с форматированием
 python -m parser_manager --file ./input/sample.pdf --output ./output/result.json --pretty
 
 # Явно выбрать формат экспорта (json | md | report)
@@ -156,30 +156,30 @@ docker compose --profile dev run --rm dev
 ```
 src/parser_manager/
 ├── core/
-│   ├── base_parser.py      # BaseParser — контракт всех парсеров
-│   └── parser_factory.py   # ParserFactory — выбор парсера по расширению
+│   ├── base_parser.py      # Базовый контракт всех парсеров
+│   └── parser_factory.py   # Выбор парсера по расширению
 ├── parsers/
-│   └── documents/          # HtmlParser, PdfParser, DocxParser, DocParser, DjvuParser
+│   └── documents/          # Реализации парсеров: Html, Pdf, Docx, Doc, Djvu
 ├── models/
-│   ├── parsed_content.py   # ParsedContent — единая модель результата
+│   ├── parsed_content.py   # Единая модель результата
 │   └── exceptions.py       # Доменные исключения
 ├── utils/
-│   ├── exporters.py        # to_json / to_markdown / to_report
+│   ├── exporters.py        # Экспорт в json / md / report
 │   ├── semantic_json.py    # Нормализация semantic_blocks
-│   ├── quality.py          # Quality scoring
+│   ├── quality.py          # Оценка качества
 │   └── file_metrics.py     # Метрики файла/контента
 ├── api/
 │   ├── app.py              # FastAPI приложение
-│   ├── jobs.py             # Async job queue
-│   └── service.py          # Sync-воркер парсинга
-└── __init__.py             # CLI entry point
+│   ├── jobs.py             # Асинхронная очередь задач
+│   └── service.py          # Синхронный обработчик парсинга
+└── __init__.py             # Точка входа CLI
 ```
 
 ---
 
 ## Архитектурные заметки
 
-- PDF использует quality-aware fallback: `pdfplumber` → `PyPDF2`, если качество ниже порога.
-- Очередь API in-memory (подходит для MVP и single-instance). Для production — нужен внешний брокер.
+- PDF использует резервный сценарий: `pdfplumber` → `PyPDF2`, если качество ниже порога.
+- Очередь API хранится в памяти (подходит для MVP и одного экземпляра сервиса). Для промышленного запуска нужен внешний брокер.
 - Webhook отправляется POST-запросом после финализации job (`done` / `failed`).
 - Логи парсинга (pdfminer/pdfplumber) заглушены по умолчанию; включить через `--verbose`.

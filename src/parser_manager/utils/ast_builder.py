@@ -1,22 +1,22 @@
-"""Построитель Document AST из flat semantic_blocks.
+"""Построитель Document AST из плоского списка semantic_blocks.
 
 Преобразует плоский список блоков в дерево документа:
 
     Document
-     ├── Section (heading level 1: "Introduction")
+     ├── Section (заголовок уровня 1: "Введение")
      │    ├── paragraph
      │    ├── table
-     │    └── Section (heading level 2: "Background")
+     │    └── Section (заголовок уровня 2: "Предпосылки")
      │         └── paragraph
-     └── paragraph  (блок до первого заголовка)
+     └── paragraph (блок до первого заголовка)
 """
 
 
 def build_ast(semantic_blocks: list[dict]) -> dict:
     """
-    Построить Document AST из flat-списка semantic_blocks.
+    Построить Document AST из плоского списка semantic_blocks.
 
-    Returns:
+    Возвращает:
         dict с полями type="document", children=[], meta={}
     """
     root: dict = {
@@ -28,7 +28,7 @@ def build_ast(semantic_blocks: list[dict]) -> dict:
     if not semantic_blocks:
         return root
 
-    # stack: list of (heading_level, node)  — level 0 = document root
+    # Стек: список пар (уровень_заголовка, узел), где 0 — корень документа
     stack: list[tuple[int, dict]] = [(0, root)]
 
     for block in semantic_blocks:
@@ -47,7 +47,7 @@ def build_ast(semantic_blocks: list[dict]) -> dict:
                 "page": page,
                 "children": [],
             }
-            # pop stack until parent has a strictly lower heading level
+            # Снимаем элементы стека, пока у родителя уровень не станет строго меньше
             while len(stack) > 1 and stack[-1][0] >= heading_level:
                 stack.pop()
             stack[-1][1]["children"].append(section)

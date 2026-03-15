@@ -1,4 +1,4 @@
-"""Сервис парсинга для API worker."""
+"""Сервис парсинга для фонового обработчика API."""
 
 import tempfile
 from pathlib import Path
@@ -11,7 +11,7 @@ def parse_file_sync(file_path: str) -> dict:
 
     parser = ParserFactory.create_parser(file_path)
     result = parser.parse()
-    # to_dict() автоматически включает doc_stats, ast, semantic_blocks, quality
+    # Метод to_dict() автоматически включает doc_stats, ast, semantic_blocks и quality
     return result.to_dict()
 
 
@@ -30,7 +30,7 @@ def export_file_sync(result_dict: dict, fmt: str) -> str:
     if fmt == "json":
         return json.dumps(result_dict, ensure_ascii=False, indent=2)
 
-    # Для Markdown восстанавливаем ParsedContent из словаря
+    # Для экспорта в текстовые форматы восстанавливаем ParsedContent из словаря
     fmt_name = result_dict.get("format", "html")
     pc = ParsedContent(
         file_path=str(result_dict.get("file_path", "")),

@@ -1,4 +1,4 @@
-"""Экспорт ParsedContent в различные форматы: Markdown, JSON и читабельный отчет."""
+"""Экспорт ParsedContent в форматы Markdown, JSON и читаемый текстовый отчёт."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def _title(content: "ParsedContent") -> str:
     if title:
         return title
     fp = str(content.file_path).replace("\\", "/")
-    return fp.rsplit("/", 1)[-1] or "Document"
+    return fp.rsplit("/", 1)[-1] or "Документ"
 
 
 def _file_name(content: "ParsedContent") -> str:
@@ -76,23 +76,26 @@ def _iter_summary_rows(content: "ParsedContent") -> list[tuple[str, str]]:
     meta = _meta(content)
 
     rows = [
-        ("File", _file_name(content)),
-        ("Format", str(content.format).upper()),
-        ("Pages", str(meta.get("pages") or stats.get("pages") or "-")),
-        ("Words", str(stats.get("word_count", 0))),
-        ("Reading time", f"{stats.get('reading_time_min', 0)} min"),
-        ("Blocks", str(metrics.get("semantic_blocks", len(content.semantic_blocks)))),
+        ("Файл", _file_name(content)),
+        ("Формат", str(content.format).upper()),
+        ("Страницы", str(meta.get("pages") or stats.get("pages") or "-")),
+        ("Слова", str(stats.get("word_count", 0))),
+        ("Время чтения", f"{stats.get('reading_time_min', 0)} мин"),
+        (
+            "Блоки",
+            str(metrics.get("semantic_blocks", len(content.semantic_blocks))),
+        ),
     ]
 
     if quality:
         rows.extend(
             [
-                ("Quality", _fmt_number(quality.get("overall_score", "-"))),
+                ("Качество", _fmt_number(quality.get("overall_score", "-"))),
                 (
-                    "Completeness",
+                    "Полнота",
                     _fmt_percent(quality.get("text_completeness")),
                 ),
-                ("Structure", _fmt_percent(quality.get("structure_score"))),
+                ("Структура", _fmt_percent(quality.get("structure_score"))),
             ]
         )
     return rows
@@ -107,29 +110,29 @@ def to_markdown(content: "ParsedContent") -> str:
     lines.append(f"# {title}\n")
 
     lines.append(
-        f"> File: `{_file_name(content)}`  \\n+> Format: `{str(content.format).upper()}`  \\n+> Pages: `{meta.get('pages') or content.doc_stats.get('pages', '-')}`"
+        f"> Файл: `{_file_name(content)}`  \\n+> Формат: `{str(content.format).upper()}`  \\n+> Страницы: `{meta.get('pages') or content.doc_stats.get('pages', '-')}`"
     )
     lines.append("")
 
     quality = content.quality or {}
 
-    lines.append("## Summary\n")
+    lines.append("## Сводка\n")
     for label, value in _iter_summary_rows(content):
         lines.append(f"- **{label}:** {value}")
     lines.append("")
 
     if quality:
-        lines.append("## Quality\n")
-        lines.append(f"- **Noise ratio:** {_fmt_percent(quality.get('noise_ratio'))}")
+        lines.append("## Качество\n")
+        lines.append(f"- **Доля шума:** {_fmt_percent(quality.get('noise_ratio'))}")
         lines.append(
-            f"- **Broken chars:** {_fmt_percent(quality.get('broken_chars_ratio'))}"
+            f"- **Битые символы:** {_fmt_percent(quality.get('broken_chars_ratio'))}"
         )
         lines.append(
-            f"- **Table coverage:** {_fmt_percent(quality.get('table_coverage'))}"
+            f"- **Покрытие таблиц:** {_fmt_percent(quality.get('table_coverage'))}"
         )
         lines.append("")
 
-    lines.append("## Content\n")
+    lines.append("## Содержимое\n")
 
     for block in content.semantic_blocks:
         btype = block.get("element_type", "paragraph")
@@ -166,14 +169,14 @@ def to_markdown(content: "ParsedContent") -> str:
 
 
 def to_report(content: "ParsedContent") -> str:
-    """Конвертировать ParsedContent в человеко-ориентированный текстовый отчет."""
+    """Конвертировать ParsedContent в читаемый текстовый отчёт."""
     title = _title(content)
     stats = content.doc_stats or {}
     quality = content.quality or {}
     metrics = content.file_metrics or {}
     lines: list[str] = [title, "=" * len(title), ""]
 
-    lines.append("Summary")
+    lines.append("Сводка")
     lines.append("-------")
     key_width = max(len(label) for label, _ in _iter_summary_rows(content))
     for label, value in _iter_summary_rows(content):
@@ -181,28 +184,28 @@ def to_report(content: "ParsedContent") -> str:
     lines.append("")
 
     if quality:
-        lines.append("Quality")
+        lines.append("Качество")
         lines.append("-------")
-        lines.append(f"Noise ratio    : {_fmt_percent(quality.get('noise_ratio'))}")
+        lines.append(f"Доля шума      : {_fmt_percent(quality.get('noise_ratio'))}")
         lines.append(
-            f"Broken chars   : {_fmt_percent(quality.get('broken_chars_ratio'))}"
+            f"Битые символы  : {_fmt_percent(quality.get('broken_chars_ratio'))}"
         )
-        lines.append(f"Table coverage : {_fmt_percent(quality.get('table_coverage'))}")
+        lines.append(f"Покрытие таблиц: {_fmt_percent(quality.get('table_coverage'))}")
         lines.append("")
 
-    lines.append("Document Stats")
+    lines.append("Статистика документа")
     lines.append("--------------")
-    lines.append(f"Characters     : {stats.get('char_count', 0)}")
-    lines.append(f"Sentences      : {stats.get('sentence_count', 0)}")
-    lines.append(f"Paragraphs     : {stats.get('paragraph_count', 0)}")
-    lines.append(f"Tables         : {stats.get('table_count', 0)}")
-    lines.append(f"Headings       : {stats.get('heading_count', 0)}")
-    lines.append(f"Lists          : {stats.get('list_count', 0)}")
-    lines.append(f"Avg block size : {metrics.get('avg_block_length', 0)}")
+    lines.append(f"Символы          : {stats.get('char_count', 0)}")
+    lines.append(f"Предложения      : {stats.get('sentence_count', 0)}")
+    lines.append(f"Абзацы           : {stats.get('paragraph_count', 0)}")
+    lines.append(f"Таблицы          : {stats.get('table_count', 0)}")
+    lines.append(f"Заголовки        : {stats.get('heading_count', 0)}")
+    lines.append(f"Списки           : {stats.get('list_count', 0)}")
+    lines.append(f"Средний блок, сим: {metrics.get('avg_block_length', 0)}")
     lines.append("")
 
     if content.semantic_blocks:
-        lines.append("Quick Preview")
+        lines.append("Короткий просмотр")
         lines.append("-------------")
         for index, block in enumerate(content.semantic_blocks[:3], start=1):
             preview = _truncate(_normalize_prose(str(block.get("content") or "")))
@@ -210,7 +213,7 @@ def to_report(content: "ParsedContent") -> str:
             lines.append(f"{index}. {label}: {preview}")
         lines.append("")
 
-    lines.append("Content")
+    lines.append("Содержимое")
     lines.append("-------")
     for block in content.semantic_blocks:
         text = str(block.get("content") or "").strip()

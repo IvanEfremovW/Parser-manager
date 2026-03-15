@@ -48,7 +48,7 @@ def _build_cli_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--pretty",
         action="store_true",
-        help="Красивый (pretty) JSON вывод",
+        help="Форматированный вывод JSON",
     )
     parser.add_argument(
         "--export-format",

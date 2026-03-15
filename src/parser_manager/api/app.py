@@ -1,4 +1,4 @@
-"""REST API для Parser Manager с async jobs и webhook callbacks."""
+"""REST API для Parser Manager с асинхронными задачами и webhook-уведомлениями."""
 
 from datetime import datetime
 from pathlib import Path
@@ -172,7 +172,7 @@ async def export_job_result(job_id: str, fmt: str):
     return PlainTextResponse(content=exported, media_type="application/json")
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# ── служебные функции ────────────────────────────────────────────────────────
 
 
 def _require_done_job(job_id: str) -> JobRecord:
