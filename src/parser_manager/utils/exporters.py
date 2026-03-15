@@ -111,7 +111,6 @@ def to_markdown(content: "ParsedContent") -> str:
     )
     lines.append("")
 
-    stats = content.doc_stats
     quality = content.quality or {}
 
     lines.append("## Summary\n")
@@ -146,7 +145,9 @@ def to_markdown(content: "ParsedContent") -> str:
             hashes = "#" * max(1, min(blevel or 2, 6))
             lines.append(f"{hashes} {normalized_text}\n")
         elif btype == "list":
-            for item in [line.strip(" -") for line in text.splitlines() if line.strip()]:
+            for item in [
+                line.strip(" -") for line in text.splitlines() if line.strip()
+            ]:
                 lines.append(f"- {item}")
             lines.append("")
         elif btype == "table":
@@ -186,9 +187,7 @@ def to_report(content: "ParsedContent") -> str:
         lines.append(
             f"Broken chars   : {_fmt_percent(quality.get('broken_chars_ratio'))}"
         )
-        lines.append(
-            f"Table coverage : {_fmt_percent(quality.get('table_coverage'))}"
-        )
+        lines.append(f"Table coverage : {_fmt_percent(quality.get('table_coverage'))}")
         lines.append("")
 
     lines.append("Document Stats")
